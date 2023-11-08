@@ -1,0 +1,121 @@
+<html>
+    <head>
+        <script type="text/javascript" src="./jsencrypt.min.js"></script>
+
+    </head>
+
+
+    <body>
+        <div style="display:flex;">
+
+            <div>
+            
+                <label for="privateKey">RSA Private key</label><br />
+                
+                <textarea id="privateKey" cols="68" rows="20">
+                -----BEGIN RSA PRIVATE KEY-----            
+                MIICXQIBAAKBgQDLZL7JkIAxVOLqtEZr+SjJZYqS59ARp3/Z/l5Q6AOWryyrCJI4            
+                A/4RjFiZ2lN2a08WGgZuYrM+rk7mXmxQdAX1aUTXk9xxZX2YrO9g2TMxpJzrdDD6            
+                AKbDSqz9TLx2mBuLFKr+dJXX4FSg6GQF9ZAlP/PxuriRMQ5kbnqGPiMCvwIDAQAB            
+                AoGAMlaw0XouAAeeUbBkbXyxF4dGEK3G1Ve7UNyfwy5pFPYt+/aXGb4DN5ygoRNj            
+                7L8KR9IRHWjYK/9AD8v2ysKsZmuXNt23ojkKHq5wirSCpO2vb244ApMQAlvZYdoA            
+                eUaYjMyq9RLBsPXh8yLAMrLGU6Yxsv5evRjrHnStW8LcImECQQDwnypVThxZP5d5            
+                vxDHV4xFvS0PFucR05TIEtpLvGIGQ8bzol9jz+A4irpIRHnyRfydyJQziS7Svp9E            
+                sSlWiOaVAkEA2GR8XZPTXTwtotF4dSSqu0sdERUCyShTAK4/vRjGviH0qITGPk+Z            
+                eCQp2ZV0WsY84/6mMRviiBn92+J7hS5TAwJAASRQOB1pxwalOl+svbVtpfsS1qp+            
+                KDh/0T89p/RZ5ru1mvxfRYL8BmiqH6OrjHnGjB0ijugMv9VFvja1AoMdzQJBALjo            
+                1SUZpunq/Iw/NxHS7Vnyi7oHHERMgvD39VtfCqV6WpiOLOEeH+R78o8NmUngUDP7            
+                bIRWcbMfksAMvsRFm4UCQQC3suGb43vEPOv8dGaIX7DxRCuvbgI+3mRn07bZe//i            
+                axiQXphcMJArJB4bpxl+Sdq59miHPhHpTIYGN9fVHYr+            
+                -----END RSA PRIVATE KEY-----
+                </textarea><br />
+                
+                <label for="publicKey">RSA Public key</label><br />
+                
+                <textarea id="publicKey" cols="68" rows="20">
+                -----BEGIN PUBLIC KEY-----            
+                MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLZL7JkIAxVOLqtEZr+SjJZYqS            
+                59ARp3/Z/l5Q6AOWryyrCJI4A/4RjFiZ2lN2a08WGgZuYrM+rk7mXmxQdAX1aUTX            
+                k9xxZX2YrO9g2TMxpJzrdDD6AKbDSqz9TLx2mBuLFKr+dJXX4FSg6GQF9ZAlP/Px            
+                uriRMQ5kbnqGPiMCvwIDAQAB            
+                -----END PUBLIC KEY-----
+                </textarea>
+            
+            </div>
+            
+            <div style="padding-left: 10px;">
+            
+                <label for="plainText">평문</label><br />                
+                <input type="text" id="plainText" style="width:600px;" value="RSA 암호화 테스트"/><br /><br />
+                
+                <label for="encryptedText">암호화된 문장</label><br />                
+                <input type="text" id="encryptedText" style="width:600px;" /><br /><br />
+                
+                <label for="decryptedText">복호화된 문장</label><br />                
+                <input type="text" id="decryptedText" style="width:600px;" /><br /><br />
+                
+                <button id="encrypt">암호화</button>
+                <button id="decrypt">복호화</button>
+
+                <br /><br />
+                <label for="keySize">키 크기 : </label><input type="text" id="keySize" style="width:80px;" value="1024"/>
+                <br />
+                <button id="create">키생성</button>
+                <br /><br />
+            
+            </div>
+            
+        </div>
+            
+
+        <script type="text/javascript">
+            window.onload = function(){
+                //http://travistidwell.com/jsencrypt/
+                //https://asecuritysite.com/encryption/js05
+                console.log('window.onload');
+
+                var privateKey = document.getElementById('privateKey');
+                var publicKey = document.getElementById('publicKey');
+                
+                
+                document.getElementById('encrypt').onclick = function(){
+                    console.log('encrypt clicked');
+                    var crypt = new JSEncrypt();   
+                    //console.log("private ->"  +crypt.getPrivateKey())                 ;
+                    crypt.setPublicKey(publicKey.textContent);
+
+                    var encryptedText = crypt.encrypt(document.getElementById('plainText').value);
+                    document.getElementById('encryptedText').value = encryptedText
+                }
+
+                document.getElementById('decrypt').onclick = function(){
+                    console.log('decrypt clicked');
+                    var crypt = new JSEncrypt();
+                    crypt.setPrivateKey(privateKey.textContent);
+                    var encryptedText = document.getElementById('encryptedText').value
+
+                    var decryptedText = crypt.decrypt(encryptedText);
+                    document.getElementById('decryptedText').value = decryptedText;
+
+                }
+
+                document.getElementById('create').onclick = function(){
+                    var txtSize = document.getElementById('keySize').value;
+                    var intSize = parseInt(txtSize);
+                    console.log('create clicked - keySize:' + intSize);
+                    
+                    var crypt = new JSEncrypt({ default_key_size : intSize});
+                    crypt.getKey();
+                    console.log('crypt.getKey()');
+
+                    privateKey.textContent = crypt.getPrivateKey();
+                    publicKey.textContent = crypt.getPublicKey();
+                }
+                
+                
+
+            }//onload
+        </script>
+    </body>
+
+</html>

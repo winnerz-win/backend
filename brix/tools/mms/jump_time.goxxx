@@ -1,0 +1,84 @@
+//package mms
+
+import (
+	"time"
+)
+
+//cJumpTimeData :
+type cJumpTimeData struct {
+	standMMS MMS
+	secToDu  time.Duration
+	isjump   bool
+	//mu       sync.RWMutex
+}
+
+//JumpTime :
+type JumpTime struct {
+	TimeStamp int64 `json:"timestamp"`
+	StandMMS  int64 `json:"stand_mms"`
+	SecToDu   int64 `json:"sec_du"`
+	IsJump    bool  `json:"is_jump"`
+}
+
+//Start :
+func (my *cJumpTimeData) start(fixDu time.Duration, fix ...int64) {
+	my.isjump = true
+	my.standMMS = MMS(time.Now().UTC().UnixNano() / DivMMS)
+	if len(fix) > 0 {
+		my.standMMS = MMS(fix[0])
+	}
+	my.secToDu = fixDu
+}
+func (my *cJumpTimeData) stop() {
+	my.isjump = false
+}
+func (my *cJumpTimeData) isJump() bool {
+	return my.isjump
+}
+
+func (my *cJumpTimeData) jumpTime() MMS {
+	nt := utc().UnixNano() / DivMMS
+	dt := jumpdata.standMMS.Value()
+	sec := int64(jumpdata.secToDu) / DivUnix
+	return MMS(nt + (nt-dt)*sec)
+}
+
+var (
+	jumpdata = cJumpTimeData{
+		standMMS: MMS(1577836800000), //20200101
+		secToDu:  time.Minute,
+		isjump:   false,
+	}
+)
+
+//CalcMinToDay :
+func CalcMinToDay(min int) time.Duration {
+	sec := (60 * 24) / min
+	return time.Second * time.Duration(sec)
+}
+
+//SetJumpTime : 고정날짜, fixDu : 초당 증가폭
+func SetJumpTime(fixDu time.Duration, fix ...int64) {
+	jumpdata.start(fixDu, fix...)
+}
+
+//RmvJumpTime :
+func RmvJumpTime() {
+	jumpdata.stop()
+}
+
+//IsJumpTime :
+func IsJumpTime() bool {
+	return jumpdata.isJump()
+}
+
+//GetJumptimeData :
+func GetJumptimeData() JumpTime {
+	jt := JumpTime{
+		TimeStamp: utc().UnixNano() / DivMMS,
+		StandMMS:  int64(jumpdata.standMMS),
+		SecToDu:   int64(jumpdata.secToDu) / DivUnix,
+		IsJump:    jumpdata.isJump(),
+	}
+	return jt
+}
