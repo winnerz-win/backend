@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"jtools/jmath"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 )
 
 /////////////////////////////////////////////////////////////////////

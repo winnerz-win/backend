@@ -13,23 +13,24 @@ import (
 	"strings"
 	"time"
 
+	"jtools/mms"
 	"txscheduler/brix/tools/jpath"
-	"txscheduler/brix/tools/mms"
 )
 
-/*Option {
-	Country:            "ko",
-	Organization:       "Golang Organization",
-	OrganizationalUnit: "Brickstream",
-	CommonName:         "Go Https for Web",
-	SerialNumberString: GetSerialNumber(),
-	StartYMD:           mms.FromYMD(20200101).YMD(),
-	EndYMD:             mms.FromYMD(21200101).YMD(),
-	IP:                 []string{"127.0.0.1"},
-	DNSNames:           []string{},
-	FileName:           "ssl",
-	RootPath:           jpath.NowPath() + "\\default_ssl",
-}
+/*
+	Option {
+		Country:            "ko",
+		Organization:       "Golang Organization",
+		OrganizationalUnit: "Brickstream",
+		CommonName:         "Go Https for Web",
+		SerialNumberString: GetSerialNumber(),
+		StartYMD:           mms.FromYMD(20200101).YMD(),
+		EndYMD:             mms.FromYMD(21200101).YMD(),
+		IP:                 []string{"127.0.0.1"},
+		DNSNames:           []string{},
+		FileName:           "ssl",
+		RootPath:           jpath.NowPath() + "\\default_ssl",
+	}
 */
 type Option struct {
 	Country            string
@@ -53,10 +54,10 @@ func (my Option) getIPList() []net.IP {
 	return list
 }
 
-//Year :
+// Year :
 const Year = time.Hour * 24 * 365
 
-//GetSerialNumber :
+// GetSerialNumber :
 func GetSerialNumber() string {
 	max := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, _ := rand.Int(rand.Reader, max)
@@ -116,7 +117,7 @@ func (my *Option) ClearRootPath() {
 	my.RootPath = "."
 }
 
-//MakeOption :
+// MakeOption :
 func MakeOption(opt *Option) {
 	if opt == nil || opt.FileName == "" {
 		opt = DefaultOption()

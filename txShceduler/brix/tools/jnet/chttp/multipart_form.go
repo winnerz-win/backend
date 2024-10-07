@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"strconv"
 
+	"jtools/jmath"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 )
 
-//MultipartForm :
+// MultipartForm :
 type mpForm struct {
 	form *multipart.Form
 }
 
-//MultipartForm :
+// MultipartForm :
 func MultipartForm(req *http.Request) mpForm {
 	BindingDummy(req)
 	return mpForm{
@@ -23,7 +23,7 @@ func MultipartForm(req *http.Request) mpForm {
 	}
 }
 
-//Value :
+// Value :
 func (my mpForm) Value(name string, index int) string {
 	if index < 0 {
 		dbg.Red("mpForm.Value.index err :", index)
@@ -43,16 +43,14 @@ func (my mpForm) Value(name string, index int) string {
 
 func (my mpForm) Int64(name string, index int) int64 {
 	str := my.Value(name, index)
-	var vErr error
-	v := jmath.NewBigDecimal(str, &vErr)
-	if vErr != nil {
+	if !jmath.IsNum(str) {
 		dbg.Red("mpForm.Int64 not format.")
 		return 0
 	}
-	return int64(v.ToBigInteger().Uint64())
+	return jmath.Int64(str)
 }
 
-//Float64 :
+// Float64 :
 func (my mpForm) Float64(name string, index int) float64 {
 	str := my.Value(name, index)
 	f64, err := strconv.ParseFloat(str, 64)
@@ -63,7 +61,7 @@ func (my mpForm) Float64(name string, index int) float64 {
 	return f64
 }
 
-//Bool :
+// Bool :
 func (my mpForm) Bool(name string, index int) bool {
 	str := my.Value(name, index)
 	str = dbg.TrimToLower(str)
@@ -77,7 +75,7 @@ func (my mpForm) Bool(name string, index int) bool {
 	return false
 }
 
-//File :
+// File :
 func (my mpForm) File(name string, index int, limit ...int64) []byte {
 	if index < 0 {
 		dbg.Red("mpForm.File.index err :", index)

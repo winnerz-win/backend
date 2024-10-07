@@ -81,7 +81,22 @@ func PurpleULBG(a ...interface{}) { printColor(purpleULBG, a...) }
 func CyanULBG(a ...interface{})   { printColor(cyanULBG, a...) }
 func WhiteULBG(a ...interface{})  { printColor(whiteULBG, a...) }
 
+//////////////////////////////////////////////
+
+var (
+	file_log_writer func(v ...interface{}) = nil
+)
+
+func SetFileLogWriter(f func(v ...interface{})) {
+	file_log_writer = f
+}
+
 func printColor(color string, a ...interface{}) {
+
+	if file_log_writer != nil {
+		file_log_writer(a...)
+	}
+
 	aa := []interface{}{}
 
 	isFormat := false

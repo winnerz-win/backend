@@ -77,6 +77,12 @@ func BindingJSON(req *http.Request, mapper interface{}) error {
 	return nil
 }
 
+func BindingStruct[T any](req *http.Request) T {
+	var re T
+	BindingJSON(req, &re)
+	return re
+}
+
 // BindingText :
 func BindingText(req *http.Request, text *string) error {
 	bodybuf, err := ioutil.ReadAll(req.Body)

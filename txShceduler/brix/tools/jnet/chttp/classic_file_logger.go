@@ -2,13 +2,13 @@ package chttp
 
 import (
 	"fmt"
+	"jtools/mms"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 
 	"github.com/urfave/negroni"
 )
@@ -96,7 +96,7 @@ func (my *dayLoger) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http
 
 		res := rw.(negroni.ResponseWriter)
 
-		client_ip, _ := GetIP(r)
+		client_ip, _, _ := GetIP(r)
 		logMessage := dbg.Cat(
 			mms.FromTime(start).String2(),
 			" [ ", client_ip, " / ", r.Host, " ] ",

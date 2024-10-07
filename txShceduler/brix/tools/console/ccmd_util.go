@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"jtools/jmath"
+	"jtools/mms"
 	"txscheduler/brix/tools/console/lout"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 )
 
-//ClearConsole : public
+// ClearConsole : public
 func ClearConsole() Ccmd {
 	return Ccmd{
 		Cmd:        KEYWORD_CLS,
@@ -40,7 +40,7 @@ func ClearConsole() Ccmd {
 	}
 }
 
-//privateNanoToTime :
+// privateNanoToTime :
 func privateNanoToTime() Ccmd {
 	return Ccmd{
 		Cmd:        KEYWORD_NANOTIME,
@@ -50,15 +50,14 @@ func privateNanoToTime() Ccmd {
 		},
 		Work: func(done chan<- bool, ps []string) {
 			defer DoneC(done)
-			var err error
 
 			strVal := strings.ReplaceAll(ps[0], ",", "")
-			val := jmath.NewBigDecimal(strVal, &err)
-			if err != nil {
-				Log(err)
+			if !jmath.IsNum(strVal) {
+				Log("not_number")
 				return
 			}
-			nano := val.ToBigInteger().Uint64()
+
+			nano := jmath.Uint64(strVal)
 			utc := time.Unix(0, int64(nano)).UTC()
 			kst := utc.Add(time.Hour * 9)
 
@@ -91,7 +90,7 @@ func privateMMSToTime() Ccmd {
 			defer DoneC(done)
 
 			strVal := strings.ReplaceAll(ps[0], ",", "")
-			if jmath.IsUnderZero(strVal) {
+			if jmath.CMP(strVal, 0) <= 0 {
 				Log(strVal)
 				return
 			}

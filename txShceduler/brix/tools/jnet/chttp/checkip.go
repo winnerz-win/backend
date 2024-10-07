@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-func GetIP(r *http.Request) (string, error) {
+func GetIP(r *http.Request) (string, string, error) {
 	//Get IP from the X-REAL-IP header
 	ip := r.Header.Get("X-REAL-IP")
 	netIP := net.ParseIP(ip)
 	if netIP != nil {
-		return ip, nil
+		return ip, "X-REAL-IP", nil
 	}
 
 	//Get IP from X-FORWARDED-FOR header
@@ -21,20 +21,20 @@ func GetIP(r *http.Request) (string, error) {
 	for _, ip := range splitIps {
 		netIP := net.ParseIP(ip)
 		if netIP != nil {
-			return ip, nil
+			return ip, "X-FORWARDED-FOR", nil
 		}
 	}
 
 	//Get IP from RemoteAddr
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	netIP = net.ParseIP(ip)
 	if netIP != nil {
-		return ip, nil
+		return ip, "RemoteAddr", nil
 	}
-	return "", fmt.Errorf("[chttp.check_ip]No valid ip found")
+	return "", "", fmt.Errorf("[chttp.check_ip]No valid ip found")
 }
 
 func ParseIP(ipstring string) (string, error) {

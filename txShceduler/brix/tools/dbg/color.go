@@ -20,6 +20,10 @@ func SetLogWriteln(f func(v ...interface{})) {
 	logWriteln = f
 }
 
+func CallLogWriteln(v ...interface{}) {
+	_logWriteln(v...)
+}
+
 func _logWriteln(v ...interface{}) {
 	if logWriteln != nil {
 		sl := []interface{}{}
@@ -32,9 +36,6 @@ func _logWriteln(v ...interface{}) {
 		} //for
 		logWriteln(sl...)
 	}
-}
-func CallLogWriteln(v ...interface{}) {
-	_logWriteln(v...)
 }
 
 func printColor(color cc.COLOR, a ...interface{}) {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"txscheduler/brix/tools/jmath"
+	"jtools/jmath"
 )
 
 func ToJsonString(v interface{}) string {
@@ -161,9 +161,7 @@ func IsTrue(p interface{}) bool {
 
 // IsNum :
 func IsNum(val string) bool {
-	var err error = nil
-	jmath.NewBigDecimal(val, &err)
-	return err == nil
+	return jmath.IsNum(val)
 }
 
 // DotString :
