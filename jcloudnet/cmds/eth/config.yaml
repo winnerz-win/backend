@@ -1,0 +1,27 @@
+##############################################################
+#
+# TX-SignServer Config
+#
+##############################################################
+
+title : "TX_SIGN_ETH"
+
+
+logger : {
+  file : {
+    is_out_log : true,
+    log_level : "debug",	# panic > error > warn > info > debug > trace
+    path : "./tx_sign_eth_log/",
+    name : "tx_sign_eth.log",
+  },
+
+  console : {
+    is_out_log : true,
+    log_level : "debug",
+  },
+
+  field_base : {
+    server_name : "tx_sign_eth",
+    server_version : "0.0.0",
+  },
+}
