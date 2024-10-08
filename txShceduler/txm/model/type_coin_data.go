@@ -1,9 +1,9 @@
 package model
 
 import (
+	"jtools/jmath"
 	"strings"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 )
 
 const (
@@ -14,14 +14,14 @@ type CoinData map[string]string
 
 func (my CoinData) String() string { return dbg.ToJSONString(my) }
 
-//NewCoinData :
+// NewCoinData :
 func NewCoinData() CoinData {
 	return CoinData{
 		ETH: ZERO,
 	}
 }
 
-//NewCoinDataSymbol :
+// NewCoinDataSymbol :
 func NewCoinDataSymbol(symbols ...string) CoinData {
 	my := CoinData{}
 	for _, symbol := range symbols {
@@ -34,14 +34,14 @@ func NewCoinDataSymbol(symbols ...string) CoinData {
 	return my
 }
 
-//AddCoinData :
+// AddCoinData :
 func (my CoinData) AddCoinData(coin CoinData) {
 	for k, v := range coin {
 		my.ADD(k, v)
 	}
 }
 
-//Price :
+// Price :
 func (my CoinData) Price(symbol string) string {
 	if price, do := my[symbol]; do {
 		return price
@@ -49,18 +49,18 @@ func (my CoinData) Price(symbol string) string {
 	return ZERO
 }
 
-//SET :
+// SET :
 func (my CoinData) SET(symbol, price string) string {
 	my[symbol] = price
 	return my[symbol]
 }
 
-//ZERO :
+// ZERO :
 func (my CoinData) ZERO(symbol string) {
 	my[symbol] = ZERO
 }
 
-//ADD :
+// ADD :
 func (my CoinData) ADD(symbol, price string) string {
 	if v, do := my[symbol]; do {
 		my[symbol] = jmath.ADD(v, price)
@@ -70,7 +70,7 @@ func (my CoinData) ADD(symbol, price string) string {
 	return my[symbol]
 }
 
-//SUB :
+// SUB :
 func (my CoinData) SUB(symbol, price string) string {
 	if v, do := my[symbol]; do {
 		r := jmath.SUB(v, price)
@@ -87,7 +87,7 @@ func (my CoinData) SUB(symbol, price string) string {
 	return my[symbol]
 }
 
-//Clone :
+// Clone :
 func (my CoinData) Clone() CoinData {
 	clone := CoinData{}
 	for k, v := range my {
@@ -96,7 +96,7 @@ func (my CoinData) Clone() CoinData {
 	return clone
 }
 
-//Do :
+// Do :
 func (my CoinData) Do() bool {
 	for _, v := range my {
 		if jmath.CMP(v, ZERO) > 0 {

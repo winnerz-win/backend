@@ -1,9 +1,9 @@
 package model
 
 import (
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/pwd"
 )
@@ -18,7 +18,7 @@ const (
 	AdminDefaultPWD  = "admin1234"
 )
 
-//Admin :
+// Admin :
 type Admin struct {
 	Name         string  `bson:"name" json:"name"`
 	Pwd          string  `bson:"pwd" json:"pwd"`
@@ -39,7 +39,7 @@ func (my Admin) UpdateDB(db mongo.DATABASE) {
 	db.C(inf.COLAdmin).Update(my.Selector(), my)
 }
 
-//IndexingDB :
+// IndexingDB :
 func (my Admin) IndexingDB() {
 	inf.DB().Run(inf.DBName, inf.COLAdmin, func(c mongo.Collection) {
 		c.EnsureIndex(mongo.SingleIndex("name", "1", true))

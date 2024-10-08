@@ -1,15 +1,15 @@
 package model
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/txm/inf"
 )
 
 type NftTx struct {
-	ecsx.TransactionBlock `bson:",inline" json:",inline"`
-	Logs                  ecsx.TxLogList `bson:"logs" json:"logs"`
+	ebcm.TransactionBlock `bson:",inline" json:",inline"`
+	Logs                  ebcm.TxLogList `bson:"logs" json:"logs"`
 
 	Number int64 `bson:"number" json:"number"`
 	//IsError              bool          `bson:"is_error" json:"is_error"`
@@ -51,7 +51,7 @@ func (NftTx) IndexingDB() {
 
 type NftCache struct {
 	Number int64                     `bson:"number" json:"number"`
-	List   ecsx.TransactionBlockList `bson:"list" json:"list"`
+	List   ebcm.TransactionBlockList `bson:"list" json:"list"`
 }
 type NftCacheList []NftCache
 

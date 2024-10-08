@@ -2,9 +2,8 @@ package inf
 
 import (
 	"fmt"
+	"jtools/cloud/jeth/jwallet"
 	"strings"
-
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx/jwalletx"
 )
 
 // KeyPair :
@@ -27,7 +26,7 @@ func (my KeyPair) String() string { return "dbg.To" }
 // valid :
 func (my KeyPair) valid() bool {
 	//jwallet.New()
-	w, err := jwalletx.Get(my.PrivateKey)
+	w, err := jwallet.Get(my.PrivateKey)
 	if err != nil {
 		return false
 	}

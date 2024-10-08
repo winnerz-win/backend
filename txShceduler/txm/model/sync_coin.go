@@ -1,9 +1,9 @@
 package model
 
 import (
+	"jtools/mms"
 	"time"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -23,7 +23,7 @@ func (SyncCoin) GetList(db mongo.DATABASE) SyncCoinList {
 
 func (my SyncCoin) Selector() mongo.Bson { return mongo.Bson{"address": my.Address} }
 
-//GetSyncMMS : 10 sec
+// GetSyncMMS : 10 sec
 func GetSyncMMS() mms.MMS {
 	nowAt := mms.Now().Add(time.Second * 10)
 	return nowAt
@@ -54,7 +54,7 @@ func (SyncCoin) InsertDB(db mongo.DATABASE, address string, at mms.MMS, isTomast
 	return true
 }
 
-//RemoveDB : LogToMaster->IsReady = true
+// RemoveDB : LogToMaster->IsReady = true
 func (my SyncCoin) RemoveDB(db mongo.DATABASE) {
 	selector := mongo.Bson{
 		"address": my.Address,

@@ -1,8 +1,9 @@
 package model
 
 import (
+	"jtools/dbg"
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -19,14 +20,16 @@ const (
 	LogInfo  = LogLevel(2)
 	LogDebug = LogLevel(3)
 	LogTrace = LogLevel(4)
+	LogCBC   = LogLevel(5)
 )
 
 type XLog struct {
-	Kind      string   `bson:"kind" json:"kind"`
-	Level     LogLevel `bson:"level" json:"level"`
-	Text      string   `bson:"text" json:"text"`
-	Timestamp mms.MMS  `bson:"timestamp" json:"timestamp"`
-	YMD       int      `bson:"ymd" json:"ymd"`
+	Kind      string    `bson:"kind" json:"kind"`
+	Level     LogLevel  `bson:"level" json:"level"`
+	Text      string    `bson:"text" json:"text"`
+	Data      mongo.MAP `bson:"data" json:"data"`
+	Timestamp mms.MMS   `bson:"timestamp" json:"timestamp"`
+	YMD       int       `bson:"ymd" json:"ymd"`
 }
 
 func (XLog) IndexingDB() {
@@ -50,7 +53,9 @@ func (my LogLevel) WriteLog(
 	x_log := XLog{
 		Kind:      kind,
 		Text:      text,
+		Data:      mongo.MAP{},
 		Timestamp: at,
+		Level:     my,
 	}
 	x_log.YMD = at.YMD()
 
@@ -64,5 +69,30 @@ func (my LogLevel) InsertLog(
 
 	DB(func(db mongo.DATABASE) {
 		my.WriteLog(db, kind, text)
+	})
+}
+
+//////////////////////////////////////////////
+
+func (my LogLevel) Set(
+	kind string,
+	data_pairs ...interface{},
+) {
+	DB(func(db mongo.DATABASE) {
+		at := mms.Now()
+		x_log := XLog{
+			Kind:      kind,
+			Text:      "data",
+			Data:      mongo.MAP{},
+			Timestamp: at,
+			Level:     my,
+		}
+		for i := 0; i < len(data_pairs); i += 2 {
+			key := dbg.Void(data_pairs[i])
+			x_log.Data[key] = data_pairs[i+1]
+		} //for
+
+		x_log.YMD = at.YMD()
+		db.C(inf.XLog).Insert(x_log)
 	})
 }

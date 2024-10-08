@@ -2,8 +2,6 @@ package model
 
 import (
 	"time"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jmap"
@@ -56,13 +54,14 @@ func SyncMemberCoinUID(db mongo.DATABASE, uid int64, iSender any) {
 	lock_member_uid(uid, func() {
 		member := LoadMember(db, uid)
 		if member.Valid() {
-			switch sender := iSender.(type) {
-			case *ecsx.Sender:
-				member.UpdateCoinDB_Legacy(db, sender)
+			member.UpdateCoinDB_Legacy(db)
+			// switch sender := iSender.(type) {
+			// case *ebcm.Sender:
+			// 	member.UpdateCoinDB_Legacy(db, sender)
 
-			case *ebcm.Sender:
-				member.UpdateCoinDB(db, sender)
-			} //switch
+			// case *ebcm.Sender:
+			// 	member.UpdateCoinDB(db, sender)
+			// } //switch
 		}
 	})
 }
@@ -75,13 +74,16 @@ func SyncMemberCoin(db mongo.DATABASE, address string, iSender any) {
 	if v := LoadMemberAddress(db, address); v.Valid() {
 		lock_member_uid(v.UID, func() {
 			member := LoadMember(db, v.UID)
-			switch sender := iSender.(type) {
-			case *ecsx.Sender:
-				member.UpdateCoinDB_Legacy(db, sender)
+			if member.Valid() {
+				member.UpdateCoinDB_Legacy(db)
+			}
+			// switch sender := iSender.(type) {
+			// case *ebcm.Sender:
+			// 	member.UpdateCoinDB_Legacy(db, sender)
 
-			case *ebcm.Sender:
-				member.UpdateCoinDB(db, sender)
-			} //switch
+			// case *ebcm.Sender:
+			// 	member.UpdateCoinDB(db, sender)
+			// } //switch
 		})
 	}
 }

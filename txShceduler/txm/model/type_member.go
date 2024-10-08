@@ -1,14 +1,11 @@
 package model
 
 import (
+	"jtools/cloud/jeth/jwallet"
+	"jtools/mms"
 	"sync"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx/jwalletx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -23,7 +20,7 @@ func (my User) String() string { return dbg.ToJSONString(my) }
 
 func (my User) PrivateKey() string {
 	seed := inf.Config().Seed
-	wallet := jwalletx.NewSeed(seed, my.UID)
+	wallet := jwallet.NewSeed(seed, my.UID)
 	return wallet.PrivateKey()
 }
 
@@ -65,18 +62,20 @@ func (my Member) UpdateDB(db mongo.DATABASE) {
 	db.C(inf.COLMember).Update(my.Selector(), my)
 }
 
-func (my Member) UpdateCoinDB_Legacy(db mongo.DATABASE, sender *ecsx.Sender) {
-	if sender == nil {
-		dbg.RedItalic("Member.UpdateCoinDB_Legacy.Sender is Nil :", dbg.Stack())
-		return
-	}
-	ethPrice := sender.CoinPrice(my.Address)
+func (my Member) UpdateCoinDB_Legacy(db mongo.DATABASE) {
+	// if sender == nil {
+	// 	dbg.RedItalic("Member.UpdateCoinDB_Legacy.Sender is Nil :", dbg.Stack())
+	// 	return
+	// }
+	finder := inf.GetFinder()
+
+	ethPrice := finder.GetCoinPrice(my.Address)
 	my.Coin.SET(ETH, ethPrice)
 	for _, token := range inf.TokenList() {
 		if token.Symbol == ETH {
 			continue
 		}
-		tokenPrice := sender.TokenPrice(my.Address, token.Contract, token.Decimal)
+		tokenPrice := finder.Price(my.Address, token.Contract, token.Decimal)
 		my.Coin.SET(token.Symbol, tokenPrice)
 	} //for
 
@@ -86,44 +85,44 @@ func (my Member) UpdateCoinDB_Legacy(db mongo.DATABASE, sender *ecsx.Sender) {
 	db.C(inf.COLMember).Update(my.Selector(), upQuery)
 }
 
-func (my Member) UpdateCoinDB(db mongo.DATABASE, sender *ebcm.Sender) {
-	if sender == nil {
-		dbg.RedItalic("Member.UpdateCoinDB.Sender is Nil :", dbg.Stack())
-		return
-	}
-	ethPrice := ebcm.WeiToETH(sender.Balance(my.Address))
-	my.Coin.SET(ETH, ethPrice)
-	for _, token := range inf.TokenList() {
-		if token.Symbol == ETH {
-			continue
-		}
-		sender.Call(
-			token.Contract,
-			abi.Method{
-				Name: "balanceOf",
-				Params: abi.NewParams(
-					abi.NewAddress(my.Address),
-				),
-				Returns: abi.NewReturns(
-					abi.Uint256,
-				),
-			},
-			my.Address,
-			func(rs abi.RESULT) {
-				tokenPrice := ebcm.WeiToToken(
-					rs.Uint256(0),
-					token.Decimal,
-				)
-				my.Coin.SET(token.Symbol, tokenPrice)
-			},
-		)
-	} //for
+// func (my Member) UpdateCoinDB(db mongo.DATABASE, sender *ebcm.Sender) {
+// 	if sender == nil {
+// 		dbg.RedItalic("Member.UpdateCoinDB.Sender is Nil :", dbg.Stack())
+// 		return
+// 	}
+// 	ethPrice := ebcm.WeiToETH(sender.Balance(my.Address))
+// 	my.Coin.SET(ETH, ethPrice)
+// 	for _, token := range inf.TokenList() {
+// 		if token.Symbol == ETH {
+// 			continue
+// 		}
+// 		sender.Call(
+// 			token.Contract,
+// 			abi.Method{
+// 				Name: "balanceOf",
+// 				Params: abi.NewParams(
+// 					abi.NewAddress(my.Address),
+// 				),
+// 				Returns: abi.NewReturns(
+// 					abi.Uint256,
+// 				),
+// 			},
+// 			my.Address,
+// 			func(rs abi.RESULT) {
+// 				tokenPrice := ebcm.WeiToToken(
+// 					rs.Uint256(0),
+// 					token.Decimal,
+// 				)
+// 				my.Coin.SET(token.Symbol, tokenPrice)
+// 			},
+// 		)
+// 	} //for
 
-	upQuery := mongo.Bson{"$set": mongo.Bson{
-		"coin": my.Coin,
-	}}
-	db.C(inf.COLMember).Update(my.Selector(), upQuery)
-}
+// 	upQuery := mongo.Bson{"$set": mongo.Bson{
+// 		"coin": my.Coin,
+// 	}}
+// 	db.C(inf.COLMember).Update(my.Selector(), upQuery)
+// }
 
 func LoadMemberAddress(db mongo.DATABASE, address string) Member {
 	member := Member{}
@@ -191,8 +190,8 @@ func (Member) IndexingDB() {
 		iter := db.C(inf.COLMember).Find(nil).Iter()
 		member := Member{}
 		for iter.Next(&member) {
-			sender := ecsx.New(inf.Mainnet(), inf.InfuraKey())
-			member.UpdateCoinDB_Legacy(db, sender)
+			//sender := inf.GetSender()
+			member.UpdateCoinDB_Legacy(db)
 		} //for
 	})
 }

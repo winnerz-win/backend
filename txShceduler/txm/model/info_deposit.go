@@ -1,19 +1,19 @@
 package model
 
 import (
+	"jtools/jmath"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 )
 
-//InfoDeposit :
+// InfoDeposit :
 type InfoDeposit struct {
 	Key       string   `bson:"key" json:"key"`
 	Coin      CoinData `bson:"coin" json:"coin"`
 	BaseValue string   `bson:"base_value" json:"base_value"`
 }
 
-//TagString :
+// TagString :
 func (InfoDeposit) TagString() []string {
 	return []string{
 		"coin", "[Symbol]마스터로 보내기위한 기준 수량",
@@ -21,13 +21,13 @@ func (InfoDeposit) TagString() []string {
 	}
 }
 
-//Collector :
+// Collector :
 func (my *InfoDeposit) Collector() mongo.Bson {
 	my.Key = "info_deposit"
 	return mongo.Bson{"key": my.Key}
 }
 
-//Get :
+// Get :
 func (InfoDeposit) Get(db mongo.DATABASE) InfoDeposit {
 	data := InfoDeposit{}
 	db.C(inf.COLInfoDeposit).Find(data.Collector()).One(&data)
@@ -37,7 +37,7 @@ func (my InfoDeposit) UpdateDB(db mongo.DATABASE) {
 	db.C(inf.COLInfoDeposit).Update(my.Collector(), my)
 }
 
-//IsAllow :
+// IsAllow :
 func (my InfoDeposit) IsAllow(symbol string, price string) bool {
 	if jmath.CMP(price, 0) <= 0 {
 		return false
@@ -50,7 +50,7 @@ func (my InfoDeposit) IsAllow(symbol string, price string) bool {
 	return jmath.CMP(price, my.BaseValue) >= 0
 }
 
-//IndexingDB :
+// IndexingDB :
 func (InfoDeposit) IndexingDB() {
 	inf.DBCollection(inf.COLInfoDeposit, func(c mongo.Collection) {
 		if cnt, _ := c.Find(nil).Count(); cnt == 0 {

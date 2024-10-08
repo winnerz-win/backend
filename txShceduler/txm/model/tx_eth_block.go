@@ -1,7 +1,7 @@
 package model
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 
@@ -22,7 +22,7 @@ const (
 
 // TxETHBlock :
 type TxETHBlock struct {
-	ecsx.TransactionBlock `bson:",inline" json:",inline"`
+	ebcm.TransactionBlock `bson:",inline" json:",inline"`
 	Price                 string  `bson:"price" json:"price"`
 	UID                   int64   `bson:"uid" json:"uid"`
 	Order                 int64   `bson:"order" json:"order"` //blocknumber
@@ -54,7 +54,7 @@ func (my TxETHBlock) IndexingDB() {
 
 // IsInert :
 func (my *TxETHBlock) IsInert(db mongo.DATABASE) error {
-	price := ecsx.WeiToToken(my.Amount, my.Decimals)
+	price := ebcm.WeiToToken(my.Amount, my.Decimals)
 	my.Price = price
 	return db.C(inf.TXETHBlock).Insert(my)
 }
@@ -63,6 +63,15 @@ func (my *TxETHBlock) IsInert(db mongo.DATABASE) error {
 func (my *TxETHBlock) Load(hash string) error {
 	var err error
 	inf.DB().Run(inf.DBName, inf.TXETHBlock, func(c mongo.Collection) {
+		err = c.Find(mongo.Bson{"hash": hash}).One(my)
+	})
+	return err
+}
+
+// TestLoad :
+func (my *TxETHBlock) TestLoad(hash string) error {
+	var err error
+	inf.Test4004DB().Run(inf.DBName, inf.TXETHBlock, func(c mongo.Collection) {
 		err = c.Find(mongo.Bson{"hash": hash}).One(my)
 	})
 	return err

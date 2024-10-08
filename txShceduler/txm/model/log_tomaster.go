@@ -1,10 +1,10 @@
 package model
 
 import (
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -47,17 +47,17 @@ func (my LogToMaster) AckPairs(coin CoinData) []interface{} {
 }
 
 /*
-	"name", my.Name,
-	"uid", my.UID,
-	"from_address", my.Address,
-	"master_address", my.MasterAddress,
-	"hash", my.Hash,
-	"contract", my.Contract,
-	"symbol", my.Symbol,
-	"price", my.Price,
-	"gas_fee", my.GasFee,
-	"timestamp", my.Timestamp,
-	"remain_coin", coin,
+"name", my.Name,
+"uid", my.UID,
+"from_address", my.Address,
+"master_address", my.MasterAddress,
+"hash", my.Hash,
+"contract", my.Contract,
+"symbol", my.Symbol,
+"price", my.Price,
+"gas_fee", my.GasFee,
+"timestamp", my.Timestamp,
+"remain_coin", coin,
 */
 func (my LogToMaster) AckJson(coin CoinData) chttp.JsonType {
 	data := chttp.JsonType{}
@@ -77,7 +77,7 @@ func (my LogToMasterList) String() string { return dbg.ToJSONString(my) }
 
 func (my LogToMaster) Valid() bool { return my.Hash != "" }
 
-//GetList : is_ready == true && is_send == false
+// GetList : is_ready == true && is_send == false
 func (LogToMaster) GetList(db mongo.DATABASE) LogToMasterList {
 	list := LogToMasterList{}
 	selector := mongo.Bson{
@@ -139,5 +139,15 @@ func (LogToMaster) IndexingDB() {
 
 		c.EnsureIndex(mongo.SingleIndex("is_ready", "1", false))
 		c.EnsureIndex(mongo.SingleIndex("is_send", "1", false))
+
+		c.EnsureIndex(mongo.MultiIndexName(
+			[]interface{}{
+				"is_send", 1,
+				"timestamp", 1,
+			},
+			false,
+			"m_index_1",
+			0,
+		))
 	})
 }

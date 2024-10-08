@@ -1,13 +1,13 @@
 package model
 
 import (
+	"jtools/jmath"
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
-//DepositPath : 유입경로.
+// DepositPath : 유입경로.
 type DepositPath string
 
 const (
@@ -15,7 +15,7 @@ const (
 	DepositPathAdmin  = DepositPath("admin`")
 )
 
-//TxETHDeposit :
+// TxETHDeposit :
 type TxETHDeposit struct {
 	Key      string      `bson:"key" json:"key"`
 	UID      int64       `bson:"uid" json:"uid"`
@@ -41,10 +41,10 @@ type TxETHDeposit struct {
 	IsForce bool `bson:"is_force" json:"is_force"`
 }
 
-//Selector :
+// Selector :
 func (my TxETHDeposit) Selector() mongo.Bson { return mongo.Bson{"key": my.Key} }
 
-//InsertDB :
+// InsertDB :
 func (my TxETHDeposit) InsertDB(db mongo.DATABASE, nowAt mms.MMS) {
 	selector := mongo.Bson{
 		"uid":      my.UID,
@@ -64,24 +64,24 @@ func (my TxETHDeposit) InsertDB(db mongo.DATABASE, nowAt mms.MMS) {
 	}
 }
 
-//CalcGas :
+// CalcGas :
 func (my *TxETHDeposit) CalcGas() {
 	my.Gas = jmath.MUL(my.GasLimit, my.GasPrice)
 }
 
-//UpdateDB :
+// UpdateDB :
 func (my TxETHDeposit) UpdateDB(db mongo.DATABASE, nowAt mms.MMS) {
 	my.Timestamp = nowAt
 	my.YMD = nowAt.YMD()
 	db.C(inf.TXETHDepositLog).Update(my.Selector(), my)
 }
 
-//RemoveDB :
+// RemoveDB :
 func (my TxETHDeposit) RemoveDB(db mongo.DATABASE) {
 	db.C(inf.TXETHDepositLog).Remove(my.Selector())
 }
 
-//IndexingDB :
+// IndexingDB :
 func (TxETHDeposit) IndexingDB() {
 	DB(func(db mongo.DATABASE) {
 		db.C(inf.TXETHDepositLog).EnsureIndex(mongo.SingleIndex("key", "1", true))

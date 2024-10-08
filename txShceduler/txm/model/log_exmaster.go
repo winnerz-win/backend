@@ -1,10 +1,10 @@
 package model
 
 import (
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -27,12 +27,12 @@ type LogExMaster struct {
 type LogExMasterList []LogExMaster
 
 /*
-	"hash":      my.Hash,
-	"from":      my.From,
-	"symbol":    my.Symbol,
-	"contract":  my.Contract,
-	"price":     my.Price,
-	"timestamp": my.Timestamp,
+"hash":      my.Hash,
+"from":      my.From,
+"symbol":    my.Symbol,
+"contract":  my.Contract,
+"price":     my.Price,
+"timestamp": my.Timestamp,
 */
 func (my LogExMaster) AckJson() chttp.JsonType {
 	data := chttp.JsonType{
@@ -87,5 +87,15 @@ func (LogExMaster) IndexingDB() {
 		c.EnsureIndex(mongo.SingleIndex("ymd", "1", false))
 		c.EnsureIndex(mongo.SingleIndex("from", "1", false))
 		c.EnsureIndex(mongo.SingleIndex("is_send", "1", false))
+
+		c.EnsureIndex(mongo.MultiIndexName(
+			[]interface{}{
+				"is_send", 1,
+				"timestamp", 1,
+			},
+			false,
+			"m_index_1",
+			0,
+		))
 	})
 }

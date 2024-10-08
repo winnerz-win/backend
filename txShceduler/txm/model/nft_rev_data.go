@@ -1,11 +1,11 @@
 package model
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/mms"
 	"sync"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -74,7 +74,7 @@ func (NftRevData) _indexingDB(c mongo.Collection, tokenIdUnique bool) {
 type NftDepositTry struct {
 	NftRevData `bson:",inline" json:",inline"`
 
-	Snap ecsx.GasSnapShot `bson:"snap" json:"-"`
+	Snap ebcm.GasSnapShot `bson:"snap" json:"-"`
 
 	Status int `bson:"status" json:"status"`
 

@@ -1,20 +1,20 @@
 package model
 
 import (
+	"jtools/jmath"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 )
 
-//TxETHCounter :
+// TxETHCounter :
 type TxETHCounter struct {
 	Mainnet     bool   `bson:"mainnet"  json:"mainnet"`
 	Number      string `bson:"number" json:"number"`
 	ChainNumber string `bson:"chain_number" json:"chain_number"`
 }
 
-//NewTxETHCounter :
+// NewTxETHCounter :
 func NewTxETHCounter(mainnet bool, startNumber string) *TxETHCounter {
 	return &TxETHCounter{
 		Mainnet: mainnet,
@@ -22,20 +22,20 @@ func NewTxETHCounter(mainnet bool, startNumber string) *TxETHCounter {
 	}
 }
 
-//GetNumber :
+// GetNumber :
 func (my TxETHCounter) GetNumber() string { return my.Number }
 
-//Selector :
+// Selector :
 func (my TxETHCounter) Selector() mongo.Bson { return mongo.Bson{"mainnet": my.Mainnet} }
 
-//IndexingDB :
+// IndexingDB :
 func (my TxETHCounter) IndexingDB() {
 	inf.DB().Run(inf.DBName, inf.TXETHCount, func(c mongo.Collection) {
 		c.EnsureIndex(mongo.SingleIndex("mainnet", "1", true))
 	})
 }
 
-//LoadFromDB :
+// LoadFromDB :
 func (my *TxETHCounter) LoadFromDB(notOverWrite ...bool) {
 	startNumber := my.Number
 	inf.DB().Run(inf.DBName, inf.TXETHCount, func(c mongo.Collection) {
@@ -50,7 +50,7 @@ func (my *TxETHCounter) LoadFromDB(notOverWrite ...bool) {
 	}
 }
 
-//Update :
+// Update :
 func (my *TxETHCounter) Update(lastNumber string) {
 	if jmath.CMP(my.Number, lastNumber) >= 0 {
 		return
@@ -61,7 +61,7 @@ func (my *TxETHCounter) Update(lastNumber string) {
 	})
 }
 
-//Inc :
+// Inc :
 func (my *TxETHCounter) Inc(chainNumber string) {
 	my.Number = jmath.ADD(my.Number, 1)
 	my.ChainNumber = chainNumber
@@ -70,7 +70,7 @@ func (my *TxETHCounter) Inc(chainNumber string) {
 	})
 }
 
-//ResetDB :
+// ResetDB :
 func (my *TxETHCounter) ResetDB() {
 	my.Number = "0"
 	inf.DB().Run(inf.DBName, inf.TXETHCount, func(c mongo.Collection) {

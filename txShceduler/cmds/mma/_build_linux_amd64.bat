@@ -1,9 +1,9 @@
 echo
 
 REM SYMBOL 바뀌는 경우 ROOT_DIR_HOST 와 SUB_DIR_HOST 도 수정해야함
-set SUB_DIR_HOST=cmds\mma
+set SUB_DIR_HOST=txShceduler\cmds\mma
 set SUB_DIR_CONTAINER=%SUB_DIR_HOST:\=/%
-set ROOT_DIR_HOST=%cd:\cmds\mma=%
+set ROOT_DIR_HOST=%cd:\txShceduler\cmds\mma=%
 set ROOT_DIR_CONTAINER=/usr/src/myapp
 
 set BUILD_NAME=txmMma.app

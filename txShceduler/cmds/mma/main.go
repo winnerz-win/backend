@@ -1,12 +1,12 @@
 package main
 
 import (
+	"jtools/mms"
 	"time"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/cnet"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/nft_winners"
 	"txscheduler/txm"
 	"txscheduler/txm/cloud"
@@ -24,40 +24,54 @@ func main() {
 	mainnet := false
 	config := &inf.IConfig{
 		Mainnet: mainnet,
-		Version: "2023.06.09",
-		Seed:    "seed_value_text",
-		DB:      "database name",
+		Version: "2024.03.04" + nft_winners.Version,
+		Seed:    "txscheduler/dummy_seed",
+		DB:      "txm_mma",
 		IPCheck: false,
 		ClientHost: map[bool][]string{
-			false: inf.NewHost("http://test_server_ip", "port"),
-			true:  inf.NewHost("https://real_server_ip", ""),
+			false: inf.NewHost("http://192.168.0.111", "18080"),
+			true:  inf.NewHost("https://192.168.0.123", ""),
 		},
-		AdminSalt: "admin_user_salt_value",
+		AdminSalt: "admin_salt",
 
 		Confirms: 1,
+
+		IsLockTransferByOwner: true,
+		Owners: inf.KeyPairList{
+			{
+				Mainnet:    false,
+				PrivateKey: "private_key",
+				Address:    "address",
+			},
+			{
+				Mainnet:    true,
+				PrivateKey: "private_key",
+				Address:    "address",
+			},
+		},
 
 		Masters: inf.KeyPairList{
 			{
 				Mainnet:    false,
-				PrivateKey: "test_private_key",
-				Address:    "test_address",
+				PrivateKey: "private_key",
+				Address:    "address",
 			},
 			{
 				Mainnet:    true,
-				PrivateKey: "real_private_key",
-				Address:    "real_address",
+				PrivateKey: "private_key",
+				Address:    "address",
 			},
 		},
 		Chargers: inf.KeyPairList{
 			{
 				Mainnet:    false,
-				PrivateKey: "test_private_key",
-				Address:    "test_address",
+				PrivateKey: "private_key",
+				Address:    "address",
 			},
 			{
 				Mainnet:    true,
-				PrivateKey: "real_private_key",
-				Address:    "real_address",
+				PrivateKey: "private_key",
+				Address:    "address",
 			},
 		},
 		Tokens: inf.TokenInfoList{
@@ -69,11 +83,10 @@ func main() {
 			},
 			{
 				Mainnet:  false,
-				Contract: "test_token_contract_address",
-				Symbol:   "test_token_symbol",
+				Contract: "token_contract_address", //(sepolia)
+				Symbol:   "WNZ",
 				Decimal:  "18",
 			},
-
 			{
 				Mainnet:  true,
 				Contract: "eth",
@@ -82,20 +95,29 @@ func main() {
 			},
 			{
 				Mainnet:  true,
-				Contract: "real_token_contract_address",
-				Symbol:   "real_token_symbol",
+				Contract: "token_contract_address",
+				Symbol:   "WNZ",
 				Decimal:  "18",
 			},
 		},
-		InfuraKeys: []string{},
-		ESKeys:     []string{},
+		InfuraKeys: []string{
+			"infura_key_1",
+			"infura_key_2",
+			"infura_key_3",
+			"infura_key_4",
+		},
+		ESKeys: []string{
+			"es_key_1",
+			"es_key_2",
+			"es_key_3",
+		},
 	}
 
 	nft_config := nft_winners.NftConfig{}
 	if !mainnet {
-		nft_config.NftContract = "test_nft_contract_address"
+		nft_config.NftContract = "nft_contract_addresss" //sepolia
 	} else {
-		nft_config.NftContract = "real_nft_contract_address"
+		nft_config.NftContract = "nft_contract_address"
 	}
 
 	if err := nft_winners.InjectNftConfig(nft_config); err != nil {
@@ -208,6 +230,7 @@ func sendDeposit(db mongo.DATABASE, list model.LogDepositList) {
 		01076684789
 
 		가입한 회원 주소로 코인이 입금되었을 경우 입금 내역 전송
+		http://service.server.com:8080/v1/coins/deposit/callback
 
 		method : post
 		content-type : application/json
@@ -256,6 +279,7 @@ func sendDeposit(db mongo.DATABASE, list model.LogDepositList) {
 func sendWithdraw(db mongo.DATABASE, list model.LogWithdrawList) {
 	/*
 		( 2. 코인 출금 신청 ) 요청으로 코인 출금이 성공/실패 했을 경우 출금 결과 전송
+		http://service.server.com:8080/v1/coins/withdraw/callback
 
 		method : post
 		content-type : application/json
@@ -308,6 +332,7 @@ func sendWithdraw(db mongo.DATABASE, list model.LogWithdrawList) {
 func sendWithdrawSELF(db mongo.DATABASE, list model.LogWithdrawSELFList) {
 	/*
 		( ex. 개인지갑 코인 출금신청 결과 ) 요청으로 코인 출금이 성공/실패 했을 경우 출금 결과 전송
+		http://service.server.com:8080/v1/coins/withdraw_self/callback
 
 		method : post
 		content-type : application/json
@@ -351,6 +376,7 @@ func sendWithdrawSELF(db mongo.DATABASE, list model.LogWithdrawSELFList) {
 func sendToMaster(db mongo.DATABASE, list model.LogToMasterList) {
 	/*
 		( 3. 개인지갑 코인 마스터지갑으로 전송시 콜백 ) 회원 개인지갑의 코인이 마스터지갑으로 전송시 이동한 코인량과 현재 개인지갑의 코인 잔액
+		http://service.server.com:8080/v1/coins/tomaster/callback
 
 		method : post
 		content-type : application/json
@@ -399,6 +425,7 @@ func sendToMaster(db mongo.DATABASE, list model.LogToMasterList) {
 func sendExMaster(db mongo.DATABASE, list model.LogExMasterList) {
 	/*
 		( 4. 개인지갑이 아닌 기타 외부에서 마스터 지갑으로 코인을 전송시 콜백 ) - 전송자의 주소와 코인종류 및 가격 , 트랜젝션 해시를 콜백함
+		http://service.server.com:8080/v1/coins/exmaster/callback
 
 		method : post
 		content-type : application/json
@@ -436,6 +463,7 @@ func sendExMaster(db mongo.DATABASE, list model.LogExMasterList) {
 func sendMasterOut(db mongo.DATABASE, list model.TxETHMasterOutList) {
 	/*
 		( 5. 마스터 계좌에서 외부 계좌로 출금 신청 결과 콜백  )
+		http://service.server.com:8080/v1/coins/master_out/callback
 
 		method : post
 		content-type : application/json

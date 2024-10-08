@@ -1,9 +1,8 @@
 package inf
 
 import (
+	"jtools/cloud/ebcm"
 	"strings"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 )
@@ -38,7 +37,7 @@ func (my TokenInfoList) FirstERC20() TokenInfo {
 	return TokenInfo{}
 }
 
-func (my *TokenInfo) Refactory(finder *ecsx.Sender) {
+func (my *TokenInfo) Refactory(finder *ebcm.Sender) {
 	my.Contract = dbg.TrimToLower(my.Contract)
 
 	if finder == nil { //COIN
@@ -49,7 +48,7 @@ func (my *TokenInfo) Refactory(finder *ecsx.Sender) {
 	}
 
 	my.IsCoin = false
-	token := finder.Token(my.Contract)
+	token := GetERC20(finder, my.Contract)
 	my.Symbol = token.Symbol()
 	my.Decimal = token.Decimals()
 

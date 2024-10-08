@@ -1,8 +1,8 @@
 package model
 
 import (
+	"jtools/jmath"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 )
 

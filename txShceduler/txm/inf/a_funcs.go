@@ -1,10 +1,14 @@
 package inf
 
 import (
+	"jcloudnet/itype"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/cloud/jeth/ecs"
+	"jtools/cloud/jeth/jwallet"
+	"jtools/jmath"
 	"strings"
 	"sync"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx/jwalletx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 )
@@ -36,8 +40,12 @@ func ESKey() string {
 	}
 	return key
 }
-func Version() string      { return config.Version }
-func Mainnet() bool        { return config.Mainnet }
+func Version() string { return config.Version }
+func Mainnet() bool   { return config.Mainnet }
+
+func IsOnwerTaskMode() bool { return config.IsLockTransferByOwner }
+func Owner() KeyPair        { return config.Owners[0] }
+
 func Master() KeyPair      { return config.Masters[0] }
 func Charger() KeyPair     { return config.Chargers[0] }
 func ClientHostIP() string { return config.ClientHost[config.Mainnet][0] }
@@ -78,25 +86,109 @@ func SymbolList() []string {
 	return list
 }
 
+// /////////////////////////////////////////////////////////////
+func GetFinder() *itype.IClient {
+	return itype.New(
+		ecs.RPC_URL(Mainnet()),
+		false,
+		InfuraKey(),
+	)
+}
+
+func GetSender() *ebcm.Sender {
+	s := GetFinder()
+	sender := s.EBCMSender(ecs.TxSigner{})
+	return sender
+}
+
+type ERC20 struct {
+	contract string
+	symbol   string
+	decimals string
+}
+
+func (my ERC20) Valid() bool      { return my.contract != "" }
+func (my ERC20) Address() string  { return my.contract }
+func (my ERC20) Symbol() string   { return my.symbol }
+func (my ERC20) Decimals() string { return my.decimals }
+func (my ERC20) String() string {
+	v := map[string]string{
+		"address":  my.contract,
+		"symbol":   my.symbol,
+		"decimals": my.decimals,
+	}
+	return dbg.ToJSONString(v)
+}
+
+type ICaller interface {
+	Call(contract string, method abi.Method, caller string, f func(rs abi.RESULT), isLogs ...bool) error
+}
+
+func GetERC20(
+	caller ICaller,
+	address string,
+) ERC20 {
+	re := ERC20{}
+	if err := caller.Call(
+		address,
+		abi.Method{
+			Name:   "symbol",
+			Params: abi.NewParams(),
+			Returns: abi.NewParams(
+				abi.String,
+			),
+		},
+		address,
+		func(rs abi.RESULT) {
+			re.symbol = rs.Text(0)
+		},
+	); err != nil {
+		return re
+	}
+	if err := caller.Call(
+		address,
+		abi.Method{
+			Name:   "decimals",
+			Params: abi.NewParams(),
+			Returns: abi.NewParams(
+				abi.Uint8,
+			),
+		},
+		address,
+		func(rs abi.RESULT) {
+			re.decimals = jmath.VALUE(rs.Uint8(0))
+		},
+	); err != nil {
+		return re
+	}
+
+	re.contract = dbg.TrimToLower(address)
+	return re
+}
+
+///////////////////////////////////////////////////////////////
+
 // TokenList : all (ETH 포함)
 func TokenList() TokenInfoList {
 	defer config.mu.RUnlock()
 	config.mu.RLock()
 	return config.Tokens
 }
+func FirstERC20() TokenInfo {
+	return TokenList().FirstERC20()
+}
 
 func AddToken(contract string) bool {
 
 	contract = dbg.TrimToLower(contract)
 
-	finder := ecsx.New(config.Mainnet, InfuraKey())
-	token := finder.Token(contract)
+	finder := GetFinder()
+	token := GetERC20(finder, contract)
 	if token.Valid() == false {
 		return false
 	}
 
 	isAdd := true
-	_ = token.String()
 	DB().Action(config.DB, func(db mongo.DATABASE) {
 		newToken := TokenInfo{
 			Mainnet:  config.Mainnet,
@@ -125,7 +217,7 @@ func AddToken(contract string) bool {
 func Confirms() int { return config.Confirms }
 
 // Wallet :
-func Wallet(uid int64) jwalletx.IWallet {
+func Wallet(uid int64) jwallet.IWallet {
 	if config.Seed == "" {
 		panic("model.Wallet -- secureSeed is not SET")
 	}
@@ -135,13 +227,30 @@ func Wallet(uid int64) jwalletx.IWallet {
 		dbg.Green(config.Seed)
 	}
 	//seed = ""
-	return jwalletx.NewSeedI(seed, uid)
+	return jwallet.NewSeedI(seed, uid)
 }
 
 func EtherScanAddressURL() string {
 	if config.Mainnet {
 		return "https://etherscan.io/address/address/"
 	} else {
-		return "https://goerli.etherscan.io/address/"
+		return "https://sepolia.etherscan.io/address/"
 	}
+}
+
+//////////////////////////////////////////////////////////////
+
+var (
+	file_log_writer func(v ...interface{}) = nil
+)
+
+func SetFileLogWriter(f func(v ...interface{})) {
+	file_log_writer = f
+}
+
+func LogWrite(v ...interface{}) {
+	if file_log_writer == nil {
+		return
+	}
+	file_log_writer(v...)
 }

@@ -1,10 +1,10 @@
 package model
 
 import (
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -122,6 +122,16 @@ func (LogWithdrawSELF) IndexingDB() {
 		c.EnsureIndex(mongo.SingleIndex("address", "1", false))
 
 		c.EnsureIndex(mongo.SingleIndex("is_send", "1", false))
+
+		c.EnsureIndex(mongo.MultiIndexName(
+			[]interface{}{
+				"is_send", 1,
+				"timestamp", 1,
+			},
+			false,
+			"m_index_1",
+			0,
+		))
 	})
 }
 

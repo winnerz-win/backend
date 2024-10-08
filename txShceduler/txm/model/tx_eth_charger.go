@@ -1,13 +1,13 @@
 package model
 
 import (
+	"jtools/jmath"
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
-//TxETHCharger :
+// TxETHCharger :
 type TxETHCharger struct {
 	Key       string  `bson:"key" json:"key"`
 	UID       int64   `bson:"uid" json:"uid"`
@@ -19,26 +19,26 @@ type TxETHCharger struct {
 	YMD       int     `bson:"ymd" json:"ymd"`
 }
 
-//TxETHChargerList :
+// TxETHChargerList :
 type TxETHChargerList []TxETHCharger
 
-//Selector :
+// Selector :
 func (my TxETHCharger) Selector() mongo.Bson { return mongo.Bson{"key": my.Key} }
 
-//InsertDB :
+// InsertDB :
 func (my TxETHCharger) InsertDB(db mongo.DATABASE) {
 	c := db.C(inf.TXETHCharger)
 	c.Insert(my)
 }
 
-//TxChargeGroup :
+// TxChargeGroup :
 type TxChargeGroup struct {
 	Address string           `json:"address"`
 	Price   string           `json:"price"`
 	List    TxETHChargerList `json:"list"`
 }
 
-//RemoveForError :
+// RemoveForError :
 func (my TxChargeGroup) RemoveForError(db mongo.DATABASE) {
 	for _, v := range my.List {
 		selector := v.Selector()
@@ -47,7 +47,7 @@ func (my TxChargeGroup) RemoveForError(db mongo.DATABASE) {
 	}
 }
 
-//GroupBy :
+// GroupBy : [address]
 func (my TxETHChargerList) GroupBy() map[string]TxChargeGroup {
 	group := map[string]TxChargeGroup{}
 	for _, tx := range my {
@@ -67,7 +67,7 @@ func (my TxETHChargerList) GroupBy() map[string]TxChargeGroup {
 	return group
 }
 
-//IndexingDB :
+// IndexingDB :
 func (my TxETHCharger) IndexingDB() {
 	inf.DBCollection(inf.TXETHCharger, func(c mongo.Collection) {
 		c.EnsureIndex(mongo.SingleIndex("state", "1", false))

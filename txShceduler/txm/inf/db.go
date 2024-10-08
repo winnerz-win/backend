@@ -13,6 +13,9 @@ var (
 const (
 	LOCALMODE = false
 
+	AASystemInfo = "aa_system_info"
+	AA_GAS_PRICE = "aa_gas_price"
+
 	XMigrate = "x_migrate"
 	XLog     = "x_log"
 

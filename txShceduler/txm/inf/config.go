@@ -1,9 +1,9 @@
 package inf
 
 import (
+	"jtools/cloud/ebcm"
 	"strings"
 	"sync"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jcfg"
 	"txscheduler/brix/tools/jpath"
@@ -19,9 +19,11 @@ type IConfig struct {
 	ClientHost map[bool][]string `yaml:"client_host" json:"client_host"`
 	AdminSalt  string            `yaml:"-" json:"-"`
 
-	Confirms int         `yaml:"confirms" json:"confirms"`
-	Masters  KeyPairList `yaml:"master" json:"master"`
-	Chargers KeyPairList `yaml:"charger" json:"charger"`
+	Confirms              int         `yaml:"confirms" json:"confirms"`
+	IsLockTransferByOwner bool        `yaml:"is_lock_transfer_by_owner"  json:"is_lock_transfer_by_owner"`
+	Owners                KeyPairList `yaml:"owners" json:"owners"`
+	Masters               KeyPairList `yaml:"master" json:"master"`
+	Chargers              KeyPairList `yaml:"charger" json:"charger"`
 
 	Tokens TokenInfoList `yaml:"tokens" json:"tokens"`
 
@@ -104,6 +106,17 @@ func SetConfig(c *IConfig) {
 	}
 	config.Seed = seed
 
+	owner := KeyPairList{}
+	for i := 0; i < len(config.Owners); i++ {
+		if config.Masters[i].Mainnet != config.Mainnet {
+
+		} else {
+			config.Owners[i].Refactory()
+			owner = append(owner, config.Owners[i])
+		}
+	} //for
+	config.Owners = owner
+
 	master := KeyPairList{}
 	for i := 0; i < len(config.Masters); i++ {
 		if config.Masters[i].Mainnet != config.Mainnet {
@@ -132,9 +145,9 @@ func SetConfig(c *IConfig) {
 		if token.Mainnet != config.Mainnet {
 		} else {
 
-			var finder *ecsx.Sender = nil
+			var finder *ebcm.Sender = nil
 			if strings.HasPrefix(config.Tokens[i].Contract, "0x") {
-				finder = ecsx.New(config.Mainnet, InfuraKey()) //ERC20
+				finder = GetSender()
 			}
 			config.Tokens[i].Refactory(finder)
 			tokens = append(tokens, config.Tokens[i])

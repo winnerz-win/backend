@@ -1,11 +1,11 @@
 package model
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -24,20 +24,30 @@ type TxETHWithdraw struct {
 	GasPrice string `bson:"gas_price,omitempty" json:"gas_price,omitempty"`
 
 	Hash      string  `bson:"hash" json:"hash"`
+	Nonce     string  `bson:"nonce" json:"nonce"`
 	State     TxState `bson:"state" json:"state"`
 	Timestamp mms.MMS `bson:"timestamp" json:"timestamp"`
 	YMD       int     `bson:"ymd" json:"ymd"`
 
-	CancelTry  bool    `bson:"cancel_try" json:"cancel_try"`
-	CancelHash string  `bson:"cancel_hash,omitempty" json:"cancel_hash,omitempty"`
-	CancelTime mms.MMS `bson:"cancel_time,omitempty" json:"cancel_time,omitempty"`
-	CancelYMD  int     `bson:"cancel_ymd,omitempty" json:"cancel_ymd,omitempty"`
+	TryData *TxTryData              `bson:"try_data,omitempty" json:"try_data,omitempty"`
+	TrySTX  ebcm.WrappedTransaction `bson:"-" json:"-"`
+
+	// RetryCnt int    `bson:"retry_cnt" json:"retry_cnt"`
+	// Mv       string `bson:"mv" json:"mv"`
+
+	// CancelTry  bool    `bson:"cancel_try" json:"cancel_try"`
+	// CancelHash string  `bson:"cancel_hash,omitempty" json:"cancel_hash,omitempty"`
+	// CancelTime mms.MMS `bson:"cancel_time,omitempty" json:"cancel_time,omitempty"`
+	// CancelYMD  int     `bson:"cancel_ymd,omitempty" json:"cancel_ymd,omitempty"`
 }
 
 func (my TxETHWithdraw) Valid() bool { return my.ReceiptCode != "" }
 
-// Wei : ecsx.TokenToWei(my.ToPrice, my.Decimal)
-func (my TxETHWithdraw) Wei() string { return ecsx.TokenToWei(my.ToPrice, my.Decimal) }
+func (my *TxETHWithdraw) SetNonce(n any)  { my.Nonce = jmath.VALUE(n) }
+func (my TxETHWithdraw) GetNonce() uint64 { return jmath.Uint64(my.Nonce) }
+
+// Wei : ebcm.TokenToWei(my.ToPrice, my.Decimal)
+func (my TxETHWithdraw) Wei() string { return ebcm.TokenToWei(my.ToPrice, my.Decimal) }
 
 // Selector : pair
 func (my TxETHWithdraw) Selector() mongo.Bson { return mongo.Bson{"receipt_code": my.ReceiptCode} }
@@ -65,8 +75,10 @@ func (my TxETHWithdraw) IndexingDB() {
 
 		rc := db.C(inf.TXETHWithdraw)
 		rc.EnsureIndex(mongo.SingleIndex("receipt_code", "1", true))
-
 		rc.EnsureIndex(mongo.SingleIndex("hash", "1", false))
+
+		rc.EnsureIndex(mongo.SingleIndex("try_data.nonce", "1", false))
+
 		rc.EnsureIndex(mongo.SingleIndex("uid", "1", false))
 		rc.EnsureIndex(mongo.SingleIndex("state", "1", false))
 		rc.EnsureIndex(mongo.SingleIndex("timestamp", "1", false))

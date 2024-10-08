@@ -3,6 +3,7 @@ package model
 import (
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
+	"txscheduler/txm/inf"
 	"txscheduler/txm/scv"
 )
 
@@ -45,7 +46,10 @@ func Ready(
 	// cbFlag[ExMasterCallback] = isExMaster
 	// cbFlag[MasterOutCallback] = isMasterOut
 
-	mongo.StartIndexingDB(
+	index_list := []mongo.IndexingDBFunc{
+		AASystemInfo{},
+		AA_GAS_PRICE{},
+
 		TxETHBlock{},
 		TxETHDeposit{},
 		TxETHInternalCnt{},
@@ -73,6 +77,16 @@ func Ready(
 		XLog{},
 
 		CTX_USER{},
-	)
+	}
+	if inf.IsOnwerTaskMode() {
+		index_list = append(index_list,
+			OwnerTask{},
+			OwnerLog{},
+			OwnerUnlockPool{},
+		)
+	}
+	mongo.StartIndexingDB(index_list...)
+
+	inf.Config()
 
 }

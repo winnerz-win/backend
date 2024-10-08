@@ -1,10 +1,11 @@
 package model
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
+	"jtools/mms"
 	"txscheduler/brix/tools/database/mongo"
+	"txscheduler/brix/tools/database/mongo/tools/jmath"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/inf"
 )
 
@@ -20,15 +21,23 @@ type TxETHMasterOut struct {
 	GasPrice string `bson:"gas_price,omitempty" json:"gas_price,omitempty"`
 
 	Hash        string  `bson:"hash" json:"hash"`
+	Nonce       string  `bson:"nonce" json:"nonce"`
 	State       TxState `bson:"state" json:"state"`
 	FailMessage string  `bson:"fail_message,omitempty" json:"fail_message,omitempty"`
 	Timestamp   mms.MMS `bson:"timestamp" json:"timestamp"`
 	YMD         int     `bson:"ymd" json:"ymd"`
 
-	CancelTry  bool    `bson:"cancel_try" json:"cancel_try"`
-	CancelHash string  `bson:"cancel_hash,omitempty" json:"cancel_hash,omitempty"`
-	CancelTime mms.MMS `bson:"cancel_time,omitempty" json:"cancel_time,omitempty"`
-	CancelYMD  int     `bson:"cancel_ymd,omitempty" json:"cancel_ymd,omitempty"`
+	//
+	//
+	TryData TxTryData               `bson:"try_data" json:"try_data"`
+	TrySTX  ebcm.WrappedTransaction `bson:"-" json:"-"`
+	// RetryCnt    int     `bson:"retry_cnt" json:"retry_cnt"`
+	// Mv          string  `bson:"mv" json:"mv"`
+
+	// CancelTry  bool    `bson:"cancel_try" json:"cancel_try"`
+	// CancelHash string  `bson:"cancel_hash,omitempty" json:"cancel_hash,omitempty"`
+	// CancelTime mms.MMS `bson:"cancel_time,omitempty" json:"cancel_time,omitempty"`
+	// CancelYMD  int     `bson:"cancel_ymd,omitempty" json:"cancel_ymd,omitempty"`
 
 	SendAt  mms.MMS `bson:"send_at" json:"send_at"`
 	SendYMD int     `bson:"send_ymd" json:"send_ymd"`
@@ -37,8 +46,11 @@ type TxETHMasterOut struct {
 
 type TxETHMasterOutList []TxETHMasterOut
 
-// Wei : ecsx.TokenToWei(my.ToPrice, my.Decimal)
-func (my TxETHMasterOut) Wei() string { return ecsx.TokenToWei(my.ToPrice, my.Decimal) }
+func (my *TxETHMasterOut) SetNonce(n any)  { my.Nonce = jmath.VALUE(n) }
+func (my TxETHMasterOut) GetNonce() uint64 { return jmath.Uint64(my.Nonce) }
+
+// Wei : ebcm.TokenToWei(my.ToPrice, my.Decimal)
+func (my TxETHMasterOut) Wei() string { return ebcm.TokenToWei(my.ToPrice, my.Decimal) }
 
 func (my TxETHMasterOut) Selector() mongo.Bson { return mongo.Bson{"receipt_code": my.ReceiptCode} }
 func (my TxETHMasterOut) Valid() bool          { return my.ReceiptCode != "" }
@@ -52,6 +64,8 @@ func (my TxETHMasterOut) IndexingDB() {
 		runIndex := func(c mongo.Collection) {
 			c.EnsureIndex(mongo.SingleIndex("receipt_code", "1", true))
 			c.EnsureIndex(mongo.SingleIndex("hash", "1", false))
+
+			c.EnsureIndex(mongo.SingleIndex("try_data.nonce", "1", false))
 
 			c.EnsureIndex(mongo.SingleIndex("state", "1", false))
 			c.EnsureIndex(mongo.SingleIndex("timestamp", "1", false))
