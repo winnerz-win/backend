@@ -1,8 +1,8 @@
 package rpc
 
 import (
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
 	"txscheduler/brix/tools/dbg"
 )
 
@@ -40,6 +40,10 @@ type EventApproval struct {
 	Owner   string `bson:"owner" json:"owner"`
 	Spender string `bson:"spender" json:"spender"`
 	Value   string `bson:"value" json:"value"`
+}
+
+type CALLER interface {
+	Call(contract string, method abi.Method, caller string, f func(rs abi.RESULT), isLogs ...bool) error
 }
 
 var (
@@ -157,7 +161,7 @@ func (ERC20Info) TagString() []string {
 	}
 }
 
-func (my cERC20) ERC20Info(caller *ebcm.Sender, reader IReader, f func(erc20_info ERC20Info)) error {
+func (my cERC20) ERC20Info(caller CALLER, reader IReader, f func(erc20_info ERC20Info)) error {
 	info := ERC20Info{
 		Address: reader.Contract(),
 	}
@@ -181,7 +185,7 @@ func (my cERC20) ERC20Info(caller *ebcm.Sender, reader IReader, f func(erc20_inf
 	return nil
 }
 
-func (cERC20) Name(caller *ebcm.Sender, reader IReader, f func(name string)) error {
+func (cERC20) Name(caller CALLER, reader IReader, f func(name string)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -199,7 +203,7 @@ func (cERC20) Name(caller *ebcm.Sender, reader IReader, f func(name string)) err
 	)
 }
 
-func (cERC20) Symbol(caller *ebcm.Sender, reader IReader, f func(symbol string)) error {
+func (cERC20) Symbol(caller CALLER, reader IReader, f func(symbol string)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -217,7 +221,7 @@ func (cERC20) Symbol(caller *ebcm.Sender, reader IReader, f func(symbol string))
 	)
 }
 
-func (cERC20) Decimals(caller *ebcm.Sender, reader IReader, f func(decimals uint8)) error {
+func (cERC20) Decimals(caller CALLER, reader IReader, f func(decimals uint8)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -235,7 +239,7 @@ func (cERC20) Decimals(caller *ebcm.Sender, reader IReader, f func(decimals uint
 	)
 }
 
-func (cERC20) TotalSupply(caller *ebcm.Sender, reader IReader, f func(totalSupply string)) error {
+func (cERC20) TotalSupply(caller CALLER, reader IReader, f func(totalSupply string)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -253,7 +257,7 @@ func (cERC20) TotalSupply(caller *ebcm.Sender, reader IReader, f func(totalSuppl
 	)
 }
 
-func (cERC20) BalanceOf(caller *ebcm.Sender, reader IReader, account string, f func(amount string)) error {
+func (cERC20) BalanceOf(caller CALLER, reader IReader, account string, f func(amount string)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -273,7 +277,7 @@ func (cERC20) BalanceOf(caller *ebcm.Sender, reader IReader, account string, f f
 	)
 }
 
-func (cERC20) Allowance(caller *ebcm.Sender, reader IReader, owner, spender string, f func(amount string)) error {
+func (cERC20) Allowance(caller CALLER, reader IReader, owner, spender string, f func(amount string)) error {
 	return caller.Call(
 		reader.Contract(),
 		abi.Method{
@@ -289,6 +293,24 @@ func (cERC20) Allowance(caller *ebcm.Sender, reader IReader, owner, spender stri
 		reader.CallerAddress(),
 		func(rs abi.RESULT) {
 			f(rs.Uint256(0))
+		},
+		_is_debug_call,
+	)
+}
+
+func (cERC20) Owner(caller CALLER, reader IReader, f func(_owner string)) error {
+	return caller.Call(
+		reader.Contract(),
+		abi.Method{
+			Name:   "owner",
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.Address,
+			),
+		},
+		reader.CallerAddress(),
+		func(rs abi.RESULT) {
+			f(rs.Address(0))
 		},
 		_is_debug_call,
 	)

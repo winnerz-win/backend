@@ -1,11 +1,11 @@
 package rpc
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/jmath"
 	"strings"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 )
 
 type cERC721 struct {
@@ -204,7 +204,7 @@ type ERC721Info struct {
 func (my ERC721Info) String() string { return dbg.ToJsonString(my) }
 
 func (my cERC721) ERC721Info(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	f func(info ERC721Info),
 ) error {
 	info := ERC721Info{
@@ -228,7 +228,7 @@ func (my cERC721) ERC721Info(
 }
 
 func (cERC721) Name(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	f func(_name string),
 ) error {
 	return caller.Call(
@@ -249,7 +249,7 @@ func (cERC721) Name(
 }
 
 func (cERC721) Symbol(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	f func(_symbol string),
 ) error {
 	return caller.Call(
@@ -274,7 +274,7 @@ func (cERC721) Symbol(
  * Use along with {totalSupply} to enumerate all tokens.
  */
 func (cERC721) TokenByIndex(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	index string,
 	f func(_token_id string),
 ) error {
@@ -298,7 +298,7 @@ func (cERC721) TokenByIndex(
 }
 
 func (cERC721) TotalSupply(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	f func(_total_supply string),
 ) error {
 	return caller.Call(
@@ -319,7 +319,7 @@ func (cERC721) TotalSupply(
 }
 
 func (cERC721) TokenURI(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	tokenId interface{},
 	f func(_token_uri string),
 ) error {
@@ -343,7 +343,7 @@ func (cERC721) TokenURI(
 }
 
 func (cERC721) BaseURI(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 ) (string, error) {
 	base_uri := ""
 	err := caller.Call(
@@ -369,7 +369,7 @@ func (cERC721) BaseURI(
  * Use along with {balanceOf} to enumerate all of ``owner``'s tokens.
  */
 func (cERC721) TokenOfOwnerByIndex(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	owner, index string,
 	f func(_token_id string),
 ) error {
@@ -394,7 +394,7 @@ func (cERC721) TokenOfOwnerByIndex(
 }
 
 func (cERC721) BalanceOf(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	owner string,
 	f func(_balance string),
 ) error {
@@ -418,7 +418,7 @@ func (cERC721) BalanceOf(
 }
 
 func (my cERC721) OwnerTokenAll(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	owner string,
 ) ([]string, error) {
 	var re_err error
@@ -445,7 +445,7 @@ func (my cERC721) OwnerTokenAll(
 }
 
 func (cERC721) OwnerOf(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	tokenId string,
 	f func(_owner string),
 ) error {
@@ -470,7 +470,7 @@ func (cERC721) OwnerOf(
 
 // IsApprovedForAll : write-func -> setApprovalForAll(operator, approved)
 func (cERC721) IsApprovedForAll(
-	caller *ebcm.Sender, reader IReader,
+	caller CALLER, reader IReader,
 	owner string,
 	operator string,
 ) (bool, error) {

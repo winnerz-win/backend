@@ -1,9 +1,9 @@
 package rpc
 
 import (
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
-	"txscheduler/brix/tools/unix"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/unix"
 )
 
 type BLOCK_HISTORY_FUNC func(caller *ebcm.Sender, reader IReader, idx string, f func(no string)) error

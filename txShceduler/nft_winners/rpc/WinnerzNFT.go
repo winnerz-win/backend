@@ -1,8 +1,8 @@
 package rpc
 
 import (
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
 )
 
 type cWinnerzNFT struct {
