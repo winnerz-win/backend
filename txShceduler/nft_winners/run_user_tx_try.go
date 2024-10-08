@@ -2,14 +2,14 @@ package nft_winners
 
 import (
 	"context"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/jmath"
+	"jtools/unix"
 	"time"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/runtext"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwdb"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/txm/model"
@@ -17,6 +17,7 @@ import (
 
 // EstimateTxFee : min , need , err
 func EstimateTxFee(
+	db mongo.DATABASE,
 	TAG string,
 	sender *ebcm.Sender,
 	from string,
@@ -46,6 +47,10 @@ func EstimateTxFee(
 	if err != nil {
 		return "0", "0", err
 	}
+	if db != nil {
+		gas_price = model.CALC_GAS_PRICE(db, gas_price)
+	}
+
 	dbg.Cyan("[", TAG, "]EstimateTxFee")
 	dbg.Cyan("min_limit :", min_limit, ", max_limit :", max_limit)
 	dbg.Cyan("gas :", gas_price.Gas, ", tip :", gas_price.Tip)
@@ -63,8 +68,13 @@ func getPadBytes_MultiTransferETH(pairs ...any) ebcm.PADBYTES {
 	receivers := []string{}
 	values := []string{}
 	for i := 0; i < len(pairs); i += 2 {
-		receivers = append(receivers, pairs[i].(string))
-		values = append(values, pairs[i+1].(string))
+		receiver := pairs[i].(string)
+		value := pairs[i+1].(string)
+		if jmath.CMP(value, model.ZERO) <= 0 {
+			continue
+		}
+		receivers = append(receivers, receiver)
+		values = append(values, value)
 	} //for
 
 	pad_bytes := ebcm.MakePadBytesABI(
@@ -240,6 +250,7 @@ EXIT:
 					if err != nil {
 						return false
 					}
+					gas_price = model.CALC_GAS_PRICE(db, gas_price)
 
 					ntx := sender.NewTransaction(
 						nonce,

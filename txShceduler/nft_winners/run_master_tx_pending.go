@@ -1,11 +1,11 @@
 package nft_winners
 
 import (
-	"txscheduler/brix/tools/cloud/ebcm"
+	"jtools/cloud/ebcm"
+	"jtools/mms"
+	"jtools/unix"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwdb"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/nft_winners/rpc"
@@ -42,7 +42,7 @@ func proc_master_pending_check(db mongo.DATABASE, nowAt mms.MMS) bool {
 
 				result_gas_info.IsSuccess = !tx.IsError
 				result_gas_info.Hash = pending_data.Hash
-				result_gas_info.TxGasPrice = tx.GasPriceETH
+				result_gas_info.TxGasPrice = tx.GetTransactionFee()
 				result_gas_info.Limit = tx.Limit
 
 				tx_timestamp = tx.Timestamp

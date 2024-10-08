@@ -1,14 +1,14 @@
 package nft_winners
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/unix"
 	"net/http"
-	"txscheduler/brix/tools/cloud/ebcm"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/database/mongo/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/doc"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
@@ -160,6 +160,7 @@ func hNftCalcETHPrice() {
 				}
 
 				tx_min_gas_wei, tx_need_gas_wei, err := EstimateTxFee(
+					db,
 					"[M_TRANS_API]",
 					finder,
 					cdata.FromAddress,
@@ -334,6 +335,7 @@ func hNftUserSaleETH() {
 
 				tx_pay_wei := cdata.PayPriceAllETH_WEI()
 				_, tx_gas_wei, err := EstimateTxFee(
+					db,
 					"[M_TRANS_SALE]",
 					sender,
 					buy_member.Address,

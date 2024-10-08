@@ -2,14 +2,14 @@ package nft_winners
 
 import (
 	"context"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/jmath"
+	"jtools/mms"
+	"jtools/unix"
 	"time"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwdb"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/txm/inf"
@@ -83,6 +83,7 @@ func proc_master_send_try(db mongo.DATABASE, nowAt mms.MMS) bool {
 		if err != nil {
 			return false
 		}
+		gas_price = model.CALC_GAS_PRICE(db, gas_price)
 
 		ntx := sender.NewTransaction(
 			nonce,
@@ -186,6 +187,7 @@ func proc_master_send_try(db mongo.DATABASE, nowAt mms.MMS) bool {
 		if err != nil {
 			return false
 		}
+		gas_price = model.CALC_GAS_PRICE(db, gas_price)
 
 		ntx := sender.NewTransaction(
 			nonce,
@@ -252,6 +254,7 @@ func proc_master_send_try(db mongo.DATABASE, nowAt mms.MMS) bool {
 		if err != nil {
 			return false
 		}
+		gas_price = model.CALC_GAS_PRICE(db, gas_price)
 
 		ntx := sender.NewTransaction(
 			nonce,

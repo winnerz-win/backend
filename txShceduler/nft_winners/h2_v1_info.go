@@ -1,11 +1,11 @@
 package nft_winners
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"net/http"
 	"sort"
-	"txscheduler/brix/tools/cloud/ebcm"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/doc"
 	"txscheduler/nft_winners/nwdb"

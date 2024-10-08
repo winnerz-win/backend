@@ -2,14 +2,15 @@ package nft_winners
 
 import (
 	"context"
+	"jcloudnet/itype"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/cloud/jeth/ecs"
+	"jtools/jmath"
 	"reflect"
 	"time"
-	"txscheduler/brix/tools/cloud/ebcm"
-	"txscheduler/brix/tools/cloud/ebcm/abi"
-	"txscheduler/brix/tools/cloud/jeth/ecs"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/nft_winners/nwdb"
@@ -76,6 +77,7 @@ func Ready(classic *chttp.Classic) runtext.Starter {
 	start_indexing_db()
 
 	cloud.InjectMasterWithdrawProcess(
+		"<NFT_MASTER_SEND>",
 		proc_master_pending_check,
 		proc_master_send_try,
 	)
@@ -120,10 +122,16 @@ func start_indexing_db() {
 }
 
 func GetSender() *ebcm.Sender {
-	return ecs.New(
+	client := itype.New(
 		ecs.RPC_URL(inf.Mainnet()),
+		false,
 		inf.InfuraKey(),
 	)
+	return client.EBCMSender(ecs.TxSigner{})
+	// return ecs.New(
+	// 	ecs.RPC_URL(inf.Mainnet()),
+	// 	inf.InfuraKey(),
+	// )
 }
 
 func check_erc20_approve_all() {
@@ -183,6 +191,7 @@ func check_erc20_approve_all() {
 		_ = exit
 
 		tag := "[MASTER.APPROVE]"
+	EXIT:
 		for {
 			time.Sleep(time.Second)
 
@@ -249,19 +258,38 @@ func check_erc20_approve_all() {
 				dbg.RedItalic(tag, "send :", err)
 				continue
 			}
+
 			dbg.Cyan(tag, "send_hash :", hash)
-			r := sender.CheckSendTxHashReceiptByHash(
-				hash,
-				ebcm.SEC_1_HOUR, //1h
+
+			r := sender.CheckSendTxHashReceipt(
+				stx,
+				3600,
 				true,
 			)
 			if r.IsSuccess {
 				dbg.Cyan(tag, r)
-				break
+				break EXIT
 
 			} else {
 				dbg.RedItalic(tag, r)
 			}
+
+			// wait_du := time.Duration(time.Hour)
+			// for {
+			// 	time.Sleep(time.Second)
+			// 	wait_du -= time.Second
+			// 	r := sender.ReceiptByHash(hash)
+
+			// 	if r.Success() {
+			// 		dbg.Cyan(tag, r)
+			// 		break EXIT
+			// 	}
+
+			// 	if wait_du <= 0 {
+			// 		dbg.RedItalic(tag, r)
+			// 	}
+			// }
+
 		} //for
 
 	}

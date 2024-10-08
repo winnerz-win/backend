@@ -1,0 +1,174 @@
+#########################################################
+#
+# WINNERS_NFT_API_TEST
+#
+#########################################################
+
+# @host=http://localhost:8989
+#@host=http://npt.iptime.org:5001
+@host=http://3.39.254.32
+@local=http://192.168.0.163:9090
+
+@TOKEN="WNZ(TEST)"
+
+
+###
+get {{host}}/v1/nft/info
+
+
+
+
+
+### "new_uri" : "http://codex.iptime.org:18080/v1/nfts/by-token_id/",
+post {{host}}/v1/nft/set_base_uri
+
+{
+    "new_uri" : "https://api.winnerz.win/v1/nfts/by-token_id/",
+    "is_callback" : false
+}
+
+
+
+
+###
+get {{local}}/version
+
+### 
+get {{local}}/v1/info/master
+
+
+
+###
+post {{host}}/v1/nft/mint/token
+
+{
+    "pay_symbol" : "WNZ(TEST)",
+    "user_address" : "0x05b93b0feeb9f60a599ba4b4c76262c22e837579",
+    "token_id" : "9999990000001",
+    "platform_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+    "platform_price" : "50",
+    "benefit_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+    "benefit_price" : "50"
+}
+
+###
+post {{host}}/v1/nft/mint/token
+
+{
+    "payer_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "owner_address" : "0x05b93b0feeb9f60a599ba4b4c76262c22e837579",
+    "token_id" : "9999990000008"
+}
+
+###
+post {{host}}/v1/nft/mint/eth
+
+{
+    "payer_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "owner_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "token_id" : "9999990000007",
+    "platform_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+    "platform_price" : "0.001",
+    "benefit_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+    "benefit_price" : "0.001"
+}
+
+###
+post {{host}}/v1/nft/mint/free
+
+{
+    "owner_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "token_id" : "9999990000009"
+}
+
+
+###
+post {{local}}/v1/nft/estimate/eth_price
+
+{
+    "from_address" : "0xf811b879b9f4f24b411a92ebd10dfb7e79c4a200",
+    "recipients" : [
+        {
+            "address" : "0x05b93b0feeb9f60a599ba4b4c76262c22e837579",
+            "price" : "0.001"
+        },
+        {
+            "address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+            "price" : "0.001"
+        }
+    ]
+}
+
+
+
+
+
+###
+post  {{host}}/v1/nft/sale/eth
+
+{
+    "sell_address" : "0x05b93b0feeb9f60a599ba4b4c76262c22e837579",
+    "sell_price" : "0.001",
+
+    "buy_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+
+    "token_id" : "9999990000002",
+
+    "benefit_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A",
+    "benefit_price" : "0.001"
+
+}
+
+###
+get {{host}}/v1/nft/receipt_code/nft_mint_token_[9999990000008]_45de2d2096d27960f665fb733fc8ad5e89c4636aa16790ef62d9f24812882d9
+
+
+
+#########################################################
+#
+#   API TEST
+#
+#########################################################
+
+
+###
+post {{host}}/v1/sign
+
+{
+    "name": "mma_testnet_user_02",
+    "data": {
+        "tester" : true
+    }
+}
+
+
+### [ 마스터출금 ] 마스터 계좌에서 외부계좌로 출금신청
+post {{host}}/v1/master/out/try
+
+{
+    "symbol" : {{TOKEN}},
+    "price" : "18.18",
+    "to" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A"
+}
+
+
+### 개인지갑에서 직접 출금을 위한 ( 잔액조회 및 가스비 계산)
+post {{host}}/v1/user/withdraw_info
+
+{
+    "from_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "symbol" : {{TOKEN}},
+    "price" : "19",
+    "to_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A"
+}
+
+
+### 개인지갑에서 직접 출금 신청
+post {{host}}/v1/user/withdraw_try
+
+{
+    "from_address" : "0xe129243a027b25d813aced72fe34b22f5fc4bb20",
+    "symbol" : {{TOKEN}},
+    "price" : "1",
+    "to_address" : "0x8CE5bb2013887eD586e6a87211aa126453368b7A"
+}

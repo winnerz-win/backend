@@ -1,11 +1,11 @@
 package nft_winners
 
 import (
+	"jtools/unix"
 	"time"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/runtext"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwdb"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/txm/model"
@@ -44,7 +44,7 @@ EXIT:
 
 						result_gas_info.IsSuccess = !tx.IsError
 						result_gas_info.Hash = pending_data.Hash
-						result_gas_info.TxGasPrice = tx.GasPriceETH
+						result_gas_info.TxGasPrice = tx.GetTransactionFee()
 						result_gas_info.Limit = tx.Limit
 
 					} else {

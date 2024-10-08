@@ -2,10 +2,11 @@ package nft_winners
 
 import (
 	"errors"
-	"txscheduler/brix/tools/cloudx/ebcmx"
+	"jtools/cloud/ebcm"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/nft_winners/rpc"
+	"txscheduler/txm/model"
 )
 
 // nwdb.NftAInfo
@@ -21,7 +22,7 @@ func (my NftConfig) String() string { return dbg.ToJSONString(my) }
 func (my NftConfig) Reader() rpc.IReader { return rpc.Reader(my.NftContract) }
 
 func (my *NftConfig) ValidAddress() error {
-	if ok := ebcmx.IsAddressP(&my.NftContract); !ok {
+	if ok := ebcm.IsAddressP(&my.NftContract); !ok {
 		return errors.New("NFT_CONTRACT_ADDRESS_FORMAT_INVALID")
 	}
 	dbg.YellowItalic("nft_winners.nft_config.nft_contract :", my.NftContract)
@@ -41,6 +42,7 @@ var (
 )
 
 func InjectNftConfig(config NftConfig) error {
+	model.SetNftWinners(config.NftContract)
 	nft_config = config
 	return nft_config.ValidAddress()
 }

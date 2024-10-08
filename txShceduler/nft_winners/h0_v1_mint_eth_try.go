@@ -1,14 +1,14 @@
 package nft_winners
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/unix"
 	"net/http"
 	"strings"
-	"txscheduler/brix/tools/cloud/ebcm"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/doc"
-	"txscheduler/brix/tools/unix"
 	"txscheduler/nft_winners/nwtypes"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
@@ -173,6 +173,7 @@ func hNftMintETH() {
 					on_pay_wei := sender.Balance(payer.Address)
 					tx_pay_wei := cdata.PayPriceAllETH_WEI()
 					_, tx_gas_wei, err := EstimateTxFee(
+						db,
 						"[MINT_ETH]",
 						sender,
 						payer.Address,
