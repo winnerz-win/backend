@@ -1,10 +1,10 @@
 package nftc
 
 import (
+	"jtools/jmath"
 	"time"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 )
@@ -23,12 +23,12 @@ func runBuyTry() {
 				}
 				db.C(inf.NFTBuyTry).Find(selector).All(&pendings)
 				for _, try := range pendings {
-					r, _, _, _ := Sender().TransactionByHash(try.Hash)
+					r, _, _ := Sender().TransactionByHash(try.Hash)
 					if !r.IsReceiptedByHash {
 						continue
 					}
 					model.LockMember(db, try.Address, func(member model.Member) {
-						member.UpdateCoinDB_Legacy(db, Sender())
+						member.UpdateCoinDB_Legacy(db)
 					})
 
 					feeGas := r.GetTransactionFee()
@@ -63,7 +63,7 @@ func runBuyTry() {
 
 			gasETH := model.ZERO
 			if cnt, _ := db.C(inf.NFTBuyTry).Find(mongo.Bson{"status": 0}).Count(); cnt > 0 {
-				gasETH = Sender().CoinPrice(nftToken.Address)
+				gasETH = Finder().GetCoinPrice(nftToken.Address)
 			}
 			if jmath.IsUnderZero(gasETH) {
 				return

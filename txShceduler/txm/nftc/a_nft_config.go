@@ -1,7 +1,6 @@
 package nftc
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/dbg"
 )
 
@@ -9,6 +8,7 @@ var (
 	/*
 		GoldenGoal NFT
 		GDGNFT
+		https://nftbase.gdgcoin.io/
 	*/
 	nftToken = struct {
 		Private  string
@@ -16,15 +16,13 @@ var (
 		Contract string
 	}{
 		Private:  "private_key",
-		Address:  "eoa_address",
-		Contract: "nft_contract_address",
+		Address:  "address",
+		Contract: "0x03B9f58383dF6996C9445d983E56f68fbcC4046A",
 	}
 
-	nftDepositAddress string = "nft_deposit_address"
+	nftDepositAddress string = "0xcc5168c6b85dc650b660b5b93f360a835e590cbc"
 
 	isRun = false
-
-	gasSpeed = ecsx.GasFast
 )
 
 func readyConfig(

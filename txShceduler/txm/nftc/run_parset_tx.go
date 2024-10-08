@@ -1,11 +1,11 @@
 package nftc
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/abmx"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/jmath"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/model"
 )
 
@@ -25,19 +25,18 @@ var (
 )
 
 var (
-	cms = ecsx.MethodIDDataList{
-		ecsx.MakeMethodIDDataM(
-			ecsx.GetMethodIDHex("setBaseURI(string)"),
-			func(data string, item *ecsx.TransactionBlock) {
-				cdata := ecsx.InputDataPure(
-					data, abmx.NewReturns(
-						abmx.String,
-					),
-				)
+	cms = ebcm.MethodIDDataList{
+		ebcm.MethodID(
+			"setBaseURI",
+			abi.TypeList{
+				abi.String,
+			},
+			func(rs abi.RESULT, item *ebcm.TransactionBlock) {
+				base_uri := rs.Text(0)
 
 				item.NewCustomInputParse()
 				cip := item.CustomInputParse
-				cip["uri"] = cdata.Text(0)
+				cip["uri"] = base_uri
 
 				cYellow("setBaseURI(", cip["uri"], ")")
 			},
@@ -45,14 +44,14 @@ var (
 	}
 )
 
-func CMS() ecsx.MethodIDDataList { return cms }
+func CMS() ebcm.MethodIDDataList { return cms }
 
 func isContract(ca string) bool {
 	ca = dbg.TrimToLower(ca)
 	return ca == nftToken.Contract
 }
 
-func parsingTxlist(db mongo.DATABASE, number string, txlist ecsx.TransactionBlockList) {
+func parsingTxlist(db mongo.DATABASE, number string, txlist ebcm.TransactionBlockList) {
 	number64 := jmath.Int64(number)
 
 	for _, tx := range txlist {
@@ -106,7 +105,7 @@ func parsingTxlist(db mongo.DATABASE, number string, txlist ecsx.TransactionBloc
 							Hash:      tx.Hash,
 							TxIndex:   tx.TxIndex,
 							LogIndex:  log.LogIndex,
-							Timestamp: tx.Timestamp,
+							Timestamp: tx.Timestamp.MMS(),
 
 							Name:    name,
 							From:    from,
@@ -137,7 +136,7 @@ func parsingTxlist(db mongo.DATABASE, number string, txlist ecsx.TransactionBloc
 						Hash:      tx.Hash,
 						TxIndex:   tx.TxIndex,
 						LogIndex:  log.LogIndex,
-						Timestamp: tx.Timestamp,
+						Timestamp: tx.Timestamp.MMS(),
 
 						Name:      name,
 						From:      from,
@@ -161,7 +160,7 @@ func parsingTxlist(db mongo.DATABASE, number string, txlist ecsx.TransactionBloc
 						Hash:      tx.Hash,
 						TxIndex:   tx.TxIndex,
 						LogIndex:  log.LogIndex,
-						Timestamp: tx.Timestamp,
+						Timestamp: tx.Timestamp.MMS(),
 
 						Name:      name,
 						From:      from,

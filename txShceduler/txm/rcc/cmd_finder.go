@@ -1,10 +1,10 @@
 package rcc
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"txscheduler/brix/tools/console"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 )
@@ -15,7 +15,7 @@ func init() {
 }
 
 func getMemberKey(db mongo.DATABASE, key string) model.Member {
-	if ecsx.IsAddress(key) {
+	if ebcm.IsAddress(key) {
 		return model.LoadMemberAddress(db, key)
 	}
 	if jmath.IsNum(key) == false {
@@ -62,16 +62,17 @@ func cmdFinder() {
 
 			masterPrice := model.NewCoinData()
 			for _, token := range inf.TokenList() {
-				finder := ecsx.New(mainnet, inf.InfuraKey())
-				wei := finder.Balance2(masterAddress, token.Contract)
-				price := ecsx.WeiToToken(wei, token.Decimal)
+				finder := Finder(mainnet, inf.InfuraKey())
+				wei := finder.TokenBalance(masterAddress, token.Contract)
+
+				price := ebcm.WeiToToken(wei, token.Decimal)
 				masterPrice.ADD(token.Symbol, price)
 			}
 
-			finder := ecsx.New(mainnet, inf.InfuraKey())
-			wei := finder.Balance(chargerAddress)
+			finder := Finder(mainnet, inf.InfuraKey())
+			wei := finder.GetCoinBalance(chargerAddress)
 			chargerPrice := model.NewCoinData()
-			chargerPrice.ADD(model.ETH, ecsx.WeiToToken(wei, "18"))
+			chargerPrice.ADD(model.ETH, ebcm.WeiToToken(wei, "18"))
 
 			memberCount := 0
 			model.DB(func(db mongo.DATABASE) {

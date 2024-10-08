@@ -21,7 +21,7 @@ func cmdInfo() {
 			console.Yellow("NFT Deposit  :", depositAddress())
 			console.Atap()
 
-			depositETH := Sender().CoinPrice(depositAddress())
+			depositETH := Finder().GetCoinPrice(depositAddress())
 
 			console.Yellow("Deposit ETH :", depositETH)
 
@@ -30,8 +30,10 @@ func cmdInfo() {
 				if token.Symbol == model.ETH {
 					continue
 				}
-				tokenPrice := Sender().TokenPrice(depositAddress(), token.Contract, token.Decimal)
+
+				tokenPrice := Finder().Price(depositAddress(), token.Contract, token.Decimal)
 				console.Yellow("Deposit", token.Symbol, ":", tokenPrice)
+
 			} //for
 
 		},

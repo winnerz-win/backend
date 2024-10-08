@@ -1,17 +1,20 @@
 package nftc
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"sync"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 )
 
-var _startNumber string = model.ZERO
+var (
+	_startNumber string = model.ZERO
+	cms_once            = sync.Once{}
+)
 
 func runCollection() {
 	defer dbg.PrintForce("nftc.runCollection ----------  END")
@@ -38,10 +41,10 @@ func runCollection() {
 		}
 
 		finder := Sender()
-		finder.SetCustomMethods(cms...)
+		ebcm.MMA_MethodID_Append("nftc.runCollection", &cms_once, cms)
 		number := aset.Number
 
-		data := finder.BlockByNumber(number, false)
+		data := finder.BlockByNumber(number)
 		if data == nil {
 			time.Sleep(sleepNormal)
 			continue
@@ -63,7 +66,7 @@ var (
 	getMu      sync.RWMutex
 )
 
-func getAllowState(db mongo.DATABASE, number string, txlist ecsx.TransactionBlockList) bool {
+func getAllowState(db mongo.DATABASE, number string, txlist ebcm.TransactionBlockList) bool {
 	defer getMu.RUnlock()
 	getMu.RLock()
 	if exGetState == 200 {
@@ -86,7 +89,7 @@ func setGetAllow(v int) {
 	exGetState = v
 }
 
-func GetTxList(number string, txlist ecsx.TransactionBlockList, isOuter bool) {
+func GetTxList(number string, txlist ebcm.TransactionBlockList, isOuter bool) {
 	model.DB(func(db mongo.DATABASE) {
 		if isOuter {
 			if !getAllowState(db, number, txlist) {

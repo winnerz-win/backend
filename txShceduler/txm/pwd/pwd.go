@@ -17,12 +17,12 @@ const (
 	KeySize = 64
 )
 
-var saltValue = "default_salt_value"
+var saltValue = "salt_value"
 
 // Salt :
 func SaltVale() string { return saltValue }
 
-// InitPWD : default_salt_value
+// InitPWD : txm1234PWD
 func InitPWD(salt string) {
 	saltValue = salt
 	dbg.PrintForce("admin-Salt :", saltValue)

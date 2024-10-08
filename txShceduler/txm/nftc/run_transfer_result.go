@@ -12,6 +12,7 @@ type NftTransferResultCallback func(db mongo.DATABASE, list model.NftTransferEnd
 
 /*
 ( 7. NFT 소유권 이전 결과 콜백  )
+http://service.server.com:8080/api/v1/nft/transfer/callback
 
 method : post
 content-type : application/json
@@ -65,12 +66,12 @@ func runTransferPending() {
 			pendings := model.NftTransferTryList{}
 			db.C(inf.NFTTransferTry).Find(nil).All(&pendings)
 			for _, try := range pendings {
-				r, _, _, _ := Sender().TransactionByHash(try.Hash)
+				r, _, _ := Sender().TransactionByHash(try.Hash)
 				if !r.IsReceiptedByHash {
 					continue
 				}
 				model.LockMember(db, try.Address, func(member model.Member) {
-					member.UpdateCoinDB_Legacy(db, Sender())
+					member.UpdateCoinDB_Legacy(db)
 				})
 
 				endData := model.NftTransferEnd{

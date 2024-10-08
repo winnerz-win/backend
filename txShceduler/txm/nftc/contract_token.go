@@ -1,18 +1,18 @@
 package nftc
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/abmx"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx/jwalletx"
+	"context"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/ebcm/abi"
+	"jtools/cloud/jeth/jwallet"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/txm/model"
 )
 
 type NFT struct{}
 
-func _nftCall(method abmx.Method, caller string, result func(abmx.RESULT)) error {
-	return abmx.Call(
-		Sender(),
+func _nftCall(method abi.Method, caller string, result func(abi.RESULT)) error {
+	return Finder().Call(
 		nftToken.Contract,
 		method,
 		caller,
@@ -23,15 +23,15 @@ func _nftCall(method abmx.Method, caller string, result func(abmx.RESULT)) error
 
 func (NFT) StartNumber(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "startNumber",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.Uint256,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.Uint256,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Uint256(0))
 		},
 	)
@@ -39,15 +39,15 @@ func (NFT) StartNumber(f func(string)) error {
 
 func (NFT) GetBaseURI(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "getBaseURI",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.String,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.String,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Text(0))
 		},
 	)
@@ -55,15 +55,15 @@ func (NFT) GetBaseURI(f func(string)) error {
 
 func (NFT) Name(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "name",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.String,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.String,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Text(0))
 		},
 	)
@@ -71,15 +71,15 @@ func (NFT) Name(f func(string)) error {
 
 func (NFT) Symbol(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "symbol",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.String,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.String,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Text(0))
 		},
 	)
@@ -87,15 +87,15 @@ func (NFT) Symbol(f func(string)) error {
 
 func (NFT) TotalSupply(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "totalSupply",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.Uint256,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.Uint256,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Uint256(0))
 		},
 	)
@@ -103,17 +103,17 @@ func (NFT) TotalSupply(f func(string)) error {
 
 func (NFT) BalanceOf(owner string, f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "balanceOf",
-			Params: abmx.NewParams(
-				abmx.NewAddress(owner),
+			Params: abi.NewParams(
+				abi.NewAddress(owner),
 			),
-			Returns: abmx.NewReturns(
-				abmx.Uint,
+			Returns: abi.NewReturns(
+				abi.Uint,
 			),
 		},
 		owner,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Uint(0))
 		},
 	)
@@ -121,15 +121,15 @@ func (NFT) BalanceOf(owner string, f func(string)) error {
 
 func (NFT) DEFAULT_ADMIN_ROLE(f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name:   "DEFAULT_ADMIN_ROLE",
-			Params: abmx.NewParams(),
-			Returns: abmx.NewReturns(
-				abmx.Bytes32,
+			Params: abi.NewParams(),
+			Returns: abi.NewReturns(
+				abi.Bytes32,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Bytes32(0))
 		},
 	)
@@ -137,17 +137,17 @@ func (NFT) DEFAULT_ADMIN_ROLE(f func(string)) error {
 
 func (NFT) GetApproved(tokenId string, f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "getApproved",
-			Params: abmx.NewParams(
-				abmx.NewUint256(tokenId),
+			Params: abi.NewParams(
+				abi.NewUint256(tokenId),
 			),
-			Returns: abmx.NewReturns(
-				abmx.Address,
+			Returns: abi.NewReturns(
+				abi.Address,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Address(0))
 		},
 	)
@@ -155,17 +155,17 @@ func (NFT) GetApproved(tokenId string, f func(string)) error {
 
 func (NFT) GetRoleAdmin(role string, f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "getRoleAdmin",
-			Params: abmx.NewParams(
-				abmx.NewBytes32(role),
+			Params: abi.NewParams(
+				abi.NewBytes32(role),
 			),
-			Returns: abmx.NewReturns(
-				abmx.Bytes32,
+			Returns: abi.NewReturns(
+				abi.Bytes32,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Bytes32(0))
 		},
 	)
@@ -173,17 +173,17 @@ func (NFT) GetRoleAdmin(role string, f func(string)) error {
 
 func (NFT) TokenURI(tokenId string, f func(string)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "tokenURI",
-			Params: abmx.NewParams(
-				abmx.NewUint256(tokenId),
+			Params: abi.NewParams(
+				abi.NewUint256(tokenId),
 			),
-			Returns: abmx.NewReturns(
-				abmx.String,
+			Returns: abi.NewReturns(
+				abi.String,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Text(0))
 		},
 	)
@@ -191,21 +191,21 @@ func (NFT) TokenURI(tokenId string, f func(string)) error {
 
 func (NFT) TokenMetaData(tokenId string, f func(model.NftMetaData)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "tokenMetaData",
-			Params: abmx.NewParams(
-				abmx.NewUint256(tokenId),
+			Params: abi.NewParams(
+				abi.NewUint256(tokenId),
 			),
-			Returns: abmx.NewReturns(
-				abmx.Uint256,
-				abmx.String,
-				abmx.String,
-				abmx.String,
-				abmx.String,
+			Returns: abi.NewReturns(
+				abi.Uint256,
+				abi.String,
+				abi.String,
+				abi.String,
+				abi.String,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			_tokenType := rs.Uint256(0)
 			_tokenName := rs.Text(1)
 			_tokenContent := rs.Text(2)
@@ -223,41 +223,9 @@ func (NFT) TokenMetaData(tokenId string, f func(model.NftMetaData)) error {
 	)
 }
 
-func (NFT) Mint(tokenId, to, tokenType string) WriteResult {
+func (my NFT) Mint(tokenId, to, tokenType string) WriteResult {
+	return my.Mint2(tokenId, to, tokenType, nil)
 
-	r := WriteResult{
-		Constract: nftToken.Contract,
-		FuncName:  "mint",
-	}
-
-	tc := Sender().TSender(nftToken.Contract)
-
-	data := ecsx.MakePadBytes(
-		"mint(uint256,address,uint256)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(3)
-			pad.SetAmount(0, tokenId)
-			pad.SetAddress(1, to)
-			pad.SetAmount(2, tokenType)
-		},
-	)
-
-	ntx, err := tc.TransferFuncNTX(
-		nftToken.Private,
-		data,
-		"0",
-		ecsx.GasFast,
-		nil,
-	)
-	if err != nil {
-		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
-	}
-
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
-	return r
 }
 
 func (NFT) Mint2(tokenId, to, tokenType string, try *model.NftBuyTry) WriteResult {
@@ -267,88 +235,42 @@ func (NFT) Mint2(tokenId, to, tokenType string, try *model.NftBuyTry) WriteResul
 		FuncName:  "mint",
 	}
 
-	data := ecsx.MakePadBytes(
-		"mint(uint256,address,uint256)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(3)
-			pad.SetAmount(0, tokenId)
-			pad.SetAddress(1, to)
-			pad.SetAmount(2, tokenType)
+	data := ebcm.MakePadBytesABI(
+		"mint",
+		abi.TypeList{
+			abi.NewUint256(tokenId),
+			abi.NewAddress(to),
+			abi.NewUint256(tokenType),
 		},
 	)
 
-	sender := Sender()
-
-	nonce, err := sender.XPendingNonceAt(nftToken.Address)
-	if err != nil {
-		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, err)
-		return r
-	}
-
-	gasLimit, err := sender.XGasLimit(
-		data,
-		nftToken.Address,
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
 		nftToken.Contract,
-		"0",
-	)
-	if err != nil {
-		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, err)
-		return r
-	}
-	gasPrice := sender.SUGGEST_GAS_PRICE(ecsx.GasFast)
-	if gasPrice.Error() != nil {
-		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, gasPrice.Error())
-		return r
-	}
 
-	ntx := sender.XNTX(
-		data,
-		nftToken.Contract,
-		"0",
-		nonce,
-		gasLimit,
-		gasPrice,
-	)
-	if ntx.Error() != nil {
-		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, ntx.Error())
-		return r
-	}
-
-	stx := sender.XSTX(
 		nftToken.Private,
-		ntx,
+		data,
+		"0",
+		&snap,
 	)
-	if stx.Error() != nil {
+	if err != nil {
 		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, stx.Error())
-		return r
 	}
 
-	if err := sender.XSend(stx); err != nil {
-		dbg.Red(err)
-		r.Set(nftToken.Address, "", nonce, err)
-		return r
+	if try != nil {
+		try.GasLimit = snap.Limit
+		try.GasPrice = snap.Price
+		try.GasFeeETH = ebcm.WeiToETH(snap.FeeWei)
+
+		dbg.Purple("gasPrice :", try.GasPrice)
+		dbg.Purple("gasLimit :", try.GasLimit)
+		dbg.Purple("feeETH :", try.GasFeeETH)
 	}
-	r.Set(
-		nftToken.Address,
-		stx.Hash(),
-		nonce,
-		nil,
-	)
 
-	try.GasLimit = gasLimit
-	try.GasPrice = gasPrice.ETH()
-	try.GasFeeETH = gasPrice.FeeETH(gasLimit)
-
-	dbg.Purple("gasPrice :", gasPrice.WEI())
-	dbg.Purple("gasLimit :", gasLimit)
-	dbg.Purple("feeETH :", gasPrice.FeeETH(gasLimit))
-
+	r.Set(from, hash, nonce, err)
 	return r
+
 }
 
 func (NFT) MintMulti(tokenId []string, to, tokenType string) WriteResult {
@@ -358,33 +280,30 @@ func (NFT) MintMulti(tokenId []string, to, tokenType string) WriteResult {
 		FuncName:  "mintMulti",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-
-	data := ecsx.MakePadBytes(
-		"mintMulti(uint256[],address,uint256)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(3)
-			pad.SetAmountArray(0, pos, tokenId...)
-			pad.SetAddress(1, to)
-			pad.SetAmount(2, tokenType)
+	data := ebcm.MakePadBytesABI(
+		"mintMulti",
+		abi.TypeList{
+			abi.NewUint256Array(tokenId),
+			abi.NewAddress(to),
+			abi.NewUint256(tokenType),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -395,37 +314,34 @@ func (NFT) MintInfo(tokenId, to, _tokenType, _tokenName, _tokenDesc, _tokenConte
 		FuncName:  "mintInfo",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-
-	data := ecsx.MakePadBytes(
-		"mintInfo(uint256,address,uint256,string,string,string,string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(3)
-			pad.SetAmount(0, tokenId)
-			pad.SetAddress(1, to)
-			pad.SetAmount(2, _tokenType)
-			pos = pad.SetText(3, pos, _tokenName)
-			pos = pad.SetText(4, pos, _tokenDesc)
-			pos = pad.SetText(5, pos, _tokenContent)
-			pos = pad.SetText(6, pos, deployer)
+	data := ebcm.MakePadBytesABI(
+		"mintInfo",
+		abi.TypeList{
+			abi.NewUint256(tokenId),
+			abi.NewAddress(to),
+			abi.NewUint256(_tokenType),
+			abi.NewString(_tokenName),
+			abi.NewString(_tokenDesc),
+			abi.NewString(_tokenContent),
+			abi.NewString(deployer),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -436,37 +352,50 @@ func (NFT) MintInfoMulti(tokenId []string, to, _tokenType, _tokenName, _tokenDes
 		FuncName:  "mintInfoMulti",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
+	// tc := Sender().TSender(nftToken.Contract)
 
-	data := ecsx.MakePadBytes(
-		"mintInfoMulti(uint256,address,uint256,string,string,string,string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(3)
-			pos = pad.SetAmountArray(0, pos, tokenId...)
-			pad.SetAddress(1, to)
-			pad.SetAmount(2, _tokenType)
-			pos = pad.SetText(3, pos, _tokenName)
-			pos = pad.SetText(4, pos, _tokenDesc)
-			pos = pad.SetText(5, pos, _tokenContent)
-			pos = pad.SetText(6, pos, deployer)
+	// data := ecsx.MakePadBytes(
+	// 	"mintInfoMulti(uint256,address,uint256,string,string,string,string)",
+	// 	func(pad ecsx.Appender) {
+	// 		pos := pad.SetParamHeader(3)
+	// 		pos = pad.SetAmountArray(0, pos, tokenId...)
+	// 		pad.SetAddress(1, to)
+	// 		pad.SetAmount(2, _tokenType)
+	// 		pos = pad.SetText(3, pos, _tokenName)
+	// 		pos = pad.SetText(4, pos, _tokenDesc)
+	// 		pos = pad.SetText(5, pos, _tokenContent)
+	// 		pos = pad.SetText(6, pos, deployer)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"mintInfoMulti",
+		abi.TypeList{
+			abi.NewUint256Array(tokenId),
+			abi.NewAddress(to),
+			abi.NewUint256(_tokenType),
+			abi.NewString(_tokenName),
+			abi.NewString(_tokenDesc),
+			abi.NewString(_tokenContent),
+			abi.NewString(deployer),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -476,29 +405,36 @@ func (NFT) Burn(privateKey string, tokenId string) WriteResult {
 		FuncName:  "burn",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"burn(uint256)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(1)
-			pad.SetAmount(0, tokenId)
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"burn(uint256)",
+	// 	func(pad ecsx.Appender) {
+	// 		pad.SetParamHeader(1)
+	// 		pad.SetAmount(0, tokenId)
+	// 	},
+	// )
+	data := ebcm.MakePadBytesABI(
+		"burn",
+		abi.TypeList{
+			abi.NewUint256(tokenId),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
-		privateKey,
+
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
+		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -508,29 +444,37 @@ func (NFT) SetBaseURL_Admin(newURI string) WriteResult {
 		FuncName:  "setBaseURI",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"setBaseURI(string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(1)
-			pad.SetText(0, pos, newURI)
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"setBaseURI(string)",
+	// 	func(pad ecsx.Appender) {
+	// 		pos := pad.SetParamHeader(1)
+	// 		pad.SetText(0, pos, newURI)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"setBaseURI",
+		abi.TypeList{
+			abi.NewString(newURI),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
+
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -540,30 +484,39 @@ func (NFT) SetTokenURI_Admin(tokenId, tokenURI string) WriteResult {
 		FuncName:  "setTokenURI",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"setTokenURI(uint256,string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(2)
-			pad.SetAmount(0, tokenId)
-			pad.SetText(1, pos, tokenURI)
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"setTokenURI(uint256,string)",
+	// 	func(pad ecsx.Appender) {
+	// 		pos := pad.SetParamHeader(2)
+	// 		pad.SetAmount(0, tokenId)
+	// 		pad.SetText(1, pos, tokenURI)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"setTokenURI",
+		abi.TypeList{
+			abi.NewUint256(tokenId),
+			abi.NewString(tokenURI),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
+
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 func (NFT) SetTypeName_Admin(nType, nName string) WriteResult {
@@ -572,30 +525,39 @@ func (NFT) SetTypeName_Admin(nType, nName string) WriteResult {
 		FuncName:  "setTypeName",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"setTypeName(uint256,string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(2)
-			pad.SetAmount(0, nType)
-			pad.SetText(1, pos, nName)
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"setTypeName(uint256,string)",
+	// 	func(pad ecsx.Appender) {
+	// 		pos := pad.SetParamHeader(2)
+	// 		pad.SetAmount(0, nType)
+	// 		pad.SetText(1, pos, nName)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"setTypeName",
+		abi.TypeList{
+			abi.NewUint256(nType),
+			abi.NewString(nName),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
+
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 func (NFT) SetTokenInfo_Admin(tokenId, tokenName, tokenDesc, tokenContent string) WriteResult {
@@ -604,32 +566,43 @@ func (NFT) SetTokenInfo_Admin(tokenId, tokenName, tokenDesc, tokenContent string
 		FuncName:  "setTokenInfo",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"setTokenInfo(uint256,string,string,string)",
-		func(pad ecsx.Appender) {
-			pos := pad.SetParamHeader(2)
-			pad.SetAmount(0, tokenId)
-			pos = pad.SetText(1, pos, tokenName)
-			pos = pad.SetText(2, pos, tokenDesc)
-			pos = pad.SetText(3, pos, tokenContent)
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"setTokenInfo(uint256,string,string,string)",
+	// 	func(pad ecsx.Appender) {
+	// 		pos := pad.SetParamHeader(2)
+	// 		pad.SetAmount(0, tokenId)
+	// 		pos = pad.SetText(1, pos, tokenName)
+	// 		pos = pad.SetText(2, pos, tokenDesc)
+	// 		pos = pad.SetText(3, pos, tokenContent)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"setTypeName",
+		abi.TypeList{
+			abi.NewUint256(tokenId),
+			abi.NewString(tokenName),
+			abi.NewString(tokenDesc),
+			abi.NewString(tokenContent),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
+
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -645,18 +618,18 @@ func (NFT) SetTokenInfo_Admin(tokenId, tokenName, tokenDesc, tokenContent string
 
 func (NFT) HasRole(role, address string, f func(bool)) error {
 	return _nftCall(
-		abmx.Method{
+		abi.Method{
 			Name: "hasRole",
-			Params: abmx.NewParams(
-				abmx.NewBytes32(role),
-				abmx.NewAddress(address),
+			Params: abi.NewParams(
+				abi.NewBytes32(role),
+				abi.NewAddress(address),
 			),
-			Returns: abmx.NewReturns(
-				abmx.Bool,
+			Returns: abi.NewReturns(
+				abi.Bool,
 			),
 		},
 		nftToken.Address,
-		func(rs abmx.RESULT) {
+		func(rs abi.RESULT) {
 			f(rs.Bool(0))
 		},
 	)
@@ -668,32 +641,40 @@ func (NFT) GrantRole(role, address string) WriteResult {
 		FuncName:  "grantRole",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
+	// tc := Sender().TSender(nftToken.Contract)
 
-	data := ecsx.MakePadBytes(
-		"grantRole(bytes32, address)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(2)
-			pad.SetBytes32Hex(0, role)
-			pad.SetAddress(0, address)
+	// data := ecsx.MakePadBytes(
+	// 	"grantRole(bytes32, address)",
+	// 	func(pad ecsx.Appender) {
+	// 		pad.SetParamHeader(2)
+	// 		pad.SetBytes32Hex(0, role)
+	// 		pad.SetAddress(0, address)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"grantRole",
+		abi.TypeList{
+			abi.NewBytes32(role),
+			abi.NewAddress(address),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -703,32 +684,40 @@ func (NFT) RevokeRole(role, address string) WriteResult {
 		FuncName:  "revokeRole",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
+	// tc := Sender().TSender(nftToken.Contract)
 
-	data := ecsx.MakePadBytes(
-		"revokeRole(bytes32, address)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(2)
-			pad.SetBytes32Hex(0, role)
-			pad.SetAddress(0, address)
+	// data := ecsx.MakePadBytes(
+	// 	"revokeRole(bytes32, address)",
+	// 	func(pad ecsx.Appender) {
+	// 		pad.SetParamHeader(2)
+	// 		pad.SetBytes32Hex(0, role)
+	// 		pad.SetAddress(0, address)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"revokeRole",
+		abi.TypeList{
+			abi.NewBytes32(role),
+			abi.NewAddress(address),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		nftToken.Private,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
@@ -738,65 +727,294 @@ func (NFT) RenounceRole(privateKey string, role, address string) WriteResult {
 		FuncName:  "renounceRole",
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
+	// tc := Sender().TSender(nftToken.Contract)
 
-	data := ecsx.MakePadBytes(
-		"renounceRole(bytes32, address)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(2)
-			pad.SetBytes32Hex(0, role)
-			pad.SetAddress(0, address)
+	// data := ecsx.MakePadBytes(
+	// 	"renounceRole(bytes32, address)",
+	// 	func(pad ecsx.Appender) {
+	// 		pad.SetParamHeader(2)
+	// 		pad.SetBytes32Hex(0, role)
+	// 		pad.SetAddress(0, address)
+	// 	},
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"renounceRole",
+		abi.TypeList{
+			abi.NewBytes32(role),
+			abi.NewAddress(address),
 		},
 	)
 
-	ntx, err := tc.TransferFuncNTX(
+	snap := ebcm.GasSnapShot{}
+	from, hash, nonce, err := TransferFuncNTX_Send(
+		Sender(),
+		nftToken.Contract,
+
 		privateKey,
 		data,
 		"0",
-		ecsx.GasFast,
-		nil,
+		&snap,
 	)
 	if err != nil {
 		dbg.Red(err)
-		r.Set(ntx.From(), "", 0, err)
-		return r
 	}
 
-	h, n, e := tc.TransferFuncSEND(ntx)
-	r.Set(ntx.From(), h, n, e)
+	r.Set(from, hash, nonce, err)
 	return r
 }
 
-func (NFT) TransferFromNTX(privateKey string, to, tokenId string) (*ecsx.NTX, error) {
-	w, err := jwalletx.Get(privateKey)
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+type TRANSFER_TOKEN struct {
+	nonce       uint64
+	gas_fee_eth string
+	stx         ebcm.WrappedTransaction
+
+	/*
+		type GasSnapShot struct {
+			Limit      uint64 `bson:"limit" json:"limit"`
+			Price      string `bson:"price" json:"price"`
+			FeeWei     string `bson:"fee_wei" json:"fee_wei"` // limit * price
+			FixedNonce uint64 `bson:"fixedNonce,omitempty" json:"fixedNonce,omitempty"`
+		}
+	*/
+	snap ebcm.GasSnapShot
+}
+
+func (my TRANSFER_TOKEN) GasFeeETH() string          { return my.gas_fee_eth }
+func (my TRANSFER_TOKEN) SnapShot() ebcm.GasSnapShot { return my.snap }
+
+func (NFT) TransferFromNTX(privateKey string, to, tokenId string) (*TRANSFER_TOKEN, error) {
+	from, err := jwallet.Get(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	from_address := from.Address()
+
+	sender := Sender()
+	nonce, err := ebcm.MMA_GetNonce(sender, from_address, true)
 	if err != nil {
 		return nil, err
 	}
 
-	tc := Sender().TSender(nftToken.Contract)
-	data := ecsx.MakePadBytes(
-		"transferFrom(address,address,uint256)",
-		func(pad ecsx.Appender) {
-			pad.SetParamHeader(3)
-			pad.SetAddress(0, w.Address()) //from
-			pad.SetAddress(1, to)          //to
-			pad.SetAmount(2, tokenId)      //tokenId
+	gas_price, err := sender.SuggestGasPrice(context.Background(), true)
+	if err != nil {
+		return nil, err
+	}
+
+	// tc := Sender().TSender(nftToken.Contract)
+	// data := ecsx.MakePadBytes(
+	// 	"transferFrom(address,address,uint256)",
+	// 	func(pad ecsx.Appender) {
+	// 		pad.SetParamHeader(3)
+	// 		pad.SetAddress(0, w.Address()) //from
+	// 		pad.SetAddress(1, to)          //to
+	// 		pad.SetAmount(2, tokenId)      //tokenId
+	// 	},
+	// )
+	// ntx, err := tc.TransferFuncNTX(
+	// 	privateKey,
+	// 	data,
+	// 	"0",
+	// 	gasSpeed,
+	// 	nil,
+	// )
+
+	data := ebcm.MakePadBytesABI(
+		"transferFrom",
+		abi.TypeList{
+			abi.NewAddress(from.Address()),
+			abi.NewAddress(to),
+			abi.NewUint256(tokenId),
 		},
 	)
-	ntx, err := tc.TransferFuncNTX(
-		privateKey,
-		data,
-		"0",
-		gasSpeed,
-		nil,
-	)
 
-	return ntx, err
+	limit, err := sender.EstimateGas(
+		context.Background(),
+		ebcm.MakeCallMsg(
+			from_address,
+			to,
+			"0",
+			data,
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	limit = ebcm.MMA_LimitBuffer(limit)
+
+	ntx := sender.NewTransaction(
+		nonce,
+		nftToken.Contract,
+		"0",
+		limit,
+		gas_price,
+		data,
+	)
+	stx, err := sender.SignTx(ntx, from.PrivateKey())
+	if err != nil {
+		return nil, err
+	}
+
+	// return ntx, err
+	tt := &TRANSFER_TOKEN{
+		nonce: nonce,
+
+		gas_fee_eth: gas_price.EstimateGasFeeETH(limit),
+		stx:         stx,
+
+		snap: ebcm.MakeGasSnapShot(
+			nonce,
+			limit,
+			gas_price,
+		),
+	}
+
+	return tt, nil
 }
 
-func (NFT) TransferFromSEND(ntx *ecsx.NTX) (string, error) {
-	tc := Sender().TSender(nftToken.Contract)
-	h, n, e := tc.TransferFuncSEND(ntx)
-	_ = n
-	return h, e
+func TransferEtherNTX(privateKey string, to, wei string) (*TRANSFER_TOKEN, error) {
+	from, err := jwallet.Get(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	from_address := from.Address()
+
+	sender := Sender()
+	nonce, err := ebcm.MMA_GetNonce(sender, from_address, true)
+	if err != nil {
+		return nil, err
+	}
+
+	gas_price, err := sender.SuggestGasPrice(context.Background(), true)
+	if err != nil {
+		return nil, err
+	}
+
+	data := ebcm.PadByteETH()
+
+	limit, err := sender.EstimateGas(
+		context.Background(),
+		ebcm.MakeCallMsg(
+			from_address,
+			to,
+			wei,
+			data,
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	//limit = ebcm.MMA_LimitBuffer(limit)
+
+	ntx := sender.NewTransaction(
+		nonce,
+		to,
+		wei,
+		limit,
+		gas_price,
+		data,
+	)
+
+	stx, err := sender.SignTx(ntx, from.PrivateKey())
+	if err != nil {
+		return nil, err
+	}
+
+	tt := &TRANSFER_TOKEN{
+		nonce: nonce,
+
+		gas_fee_eth: gas_price.EstimateGasFeeETH(limit),
+		stx:         stx,
+
+		snap: ebcm.MakeGasSnapShot(
+			nonce,
+			limit,
+			gas_price,
+		),
+	}
+
+	return tt, nil
+}
+
+func TransferTokenNTX(contract string, privateKey string, to string, token_wei string) (*TRANSFER_TOKEN, error) {
+
+	from, err := jwallet.Get(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	from_address := from.Address()
+
+	sender := Sender()
+	nonce, err := ebcm.MMA_GetNonce(sender, from_address, true)
+	if err != nil {
+		return nil, err
+	}
+
+	gas_price, err := sender.SuggestGasPrice(context.Background(), true)
+	if err != nil {
+		return nil, err
+	}
+
+	data := ebcm.PadByteTransfer(
+		to,
+		token_wei,
+	)
+
+	limit, err := sender.EstimateGas(
+		context.Background(),
+		ebcm.MakeCallMsg(
+			from_address,
+			to,
+			"0",
+			data,
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	limit = ebcm.MMA_LimitBuffer(limit)
+
+	ntx := sender.NewTransaction(
+		nonce,
+		contract,
+		"0",
+		limit,
+		gas_price,
+		data,
+	)
+
+	stx, err := sender.SignTx(ntx, from.PrivateKey())
+	if err != nil {
+		return nil, err
+	}
+
+	tt := &TRANSFER_TOKEN{
+		nonce: nonce,
+
+		gas_fee_eth: gas_price.EstimateGasFeeETH(limit),
+		stx:         stx,
+
+		snap: ebcm.MakeGasSnapShot(
+			nonce,
+			limit,
+			gas_price,
+		),
+	}
+
+	return tt, nil
+}
+
+func TransferNTX_Send(tt *TRANSFER_TOKEN) (string, error) {
+	hash, err := Sender().SendTransaction(
+		context.Background(),
+		tt.stx,
+	)
+	return hash, err
 }

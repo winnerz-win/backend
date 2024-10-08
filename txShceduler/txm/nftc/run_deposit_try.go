@@ -1,11 +1,11 @@
 package nftc
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 )
@@ -42,7 +42,7 @@ func runDepositTry() {
 				pendings := model.NftDepositTryList{}
 				db.C(inf.NFTDepositTry).Find(mongo.Bson{"status": 1}).All(&pendings)
 				for _, depositTry := range pendings {
-					r, _, _, _ := Sender().TransactionByHash(depositTry.DepositHash)
+					r, _, _ := Sender().TransactionByHash(depositTry.DepositHash)
 					if !r.IsReceiptedByHash {
 						continue
 					}
@@ -59,7 +59,7 @@ func runDepositTry() {
 						depositFail(depositTry, r.GetTransactionFee())
 						if depositTry.Address == depositTry.PayAddress {
 							model.LockMemberUID(db, depositTry.UID, func(member model.Member) {
-								member.UpdateCoinDB_Legacy(db, Sender())
+								member.UpdateCoinDB_Legacy(db)
 							})
 						}
 
@@ -77,7 +77,7 @@ func runDepositTry() {
 								member.Withdraw.ADD(depositTry.PaySymbol, depositTry.PayPrice)
 								member.UpdateDB(db)
 
-								member.UpdateCoinDB_Legacy(db, Sender())
+								member.UpdateCoinDB_Legacy(db)
 							})
 						}
 					}
@@ -104,17 +104,23 @@ func runDepositTry() {
 					continue
 				}
 
-				ethPrice := Sender().CoinPrice(depositTry.Address)
+				ethPrice := Finder().GetCoinPrice(depositTry.Address)
 
 				token := tokenlist.GetSymbol(depositTry.PaySymbol)
 				if token.Symbol == model.ETH {
-					ntx, err := Sender().EthTransferNTX(
+					// ntx, err := Sender().EthTransferNTX(
+					// 	depositTry.PrivateKey(),
+					// 	depositAddress(),
+					// 	ebcm.ETHToWei(depositTry.PayPrice),
+					// 	gasSpeed,
+					// 	&depositTry.Snap,
+					// )
+					ntx, err := TransferEtherNTX(
 						depositTry.PrivateKey(),
 						depositAddress(),
-						ecsx.ETHToWei(depositTry.PayPrice),
-						gasSpeed,
-						&depositTry.Snap,
+						ebcm.ETHToWei(depositTry.PayPrice),
 					)
+
 					if err != nil {
 						depositFail(depositTry, model.ZERO)
 						continue
@@ -126,7 +132,7 @@ func runDepositTry() {
 						continue
 					}
 
-					h, _, err := Sender().EthTransferSEND(ntx)
+					h, err := TransferNTX_Send(ntx)
 					if err != nil {
 						depositFail(depositTry, model.ZERO)
 						continue
@@ -140,27 +146,36 @@ func runDepositTry() {
 						depositFail(depositTry, model.ZERO)
 						continue
 					}
-					tkPrice := Sender().TokenPrice(depositTry.Address, token.Contract, token.Decimal)
+					tkPrice := Finder().Price(depositTry.Address, token.Contract, token.Decimal)
 					if jmath.CMP(tkPrice, depositTry.PayPrice) < 0 {
 						depositFail(depositTry, model.ZERO)
 						continue
 					}
 
-					ts := Sender().TSender(token.Contract)
-					ntx, err := ts.TransferFuncNTX(
+					// ts := Sender().TSender(token.Contract)
+					// ntx, err := ts.TransferFuncNTX(
+					// 	depositTry.PayPrivateKey(),
+					// 	ebcm.TransferPadBytes(
+					// 		depositAddress(),
+					// 		ebcm.TokenToWei(depositTry.PayPrice, token.Decimal),
+					// 	),
+					// 	"0",
+					// 	gasSpeed,
+					// 	&depositTry.Snap,
+					// )
+
+					ntx, err := TransferTokenNTX(
+						token.Contract,
 						depositTry.PayPrivateKey(),
-						ecsx.TransferPadBytes(
-							depositAddress(),
-							ecsx.TokenToWei(depositTry.PayPrice, token.Decimal),
-						),
-						"0",
-						gasSpeed,
-						&depositTry.Snap,
+						depositAddress(),
+						ebcm.TokenToWei(depositTry.PayPrice, token.Decimal),
 					)
+
 					if err != nil {
 						depositFail(depositTry, model.ZERO)
 						continue
 					}
+					depositTry.Snap = ntx.SnapShot()
 
 					gasETH := ntx.GasFeeETH()
 					if jmath.CMP(ethPrice, gasETH) < 0 {
@@ -168,7 +183,8 @@ func runDepositTry() {
 						continue
 					}
 
-					h, _, err := ts.TransferFuncSEND(ntx)
+					//h, _, err := ts.TransferFuncSEND(ntx)
+					h, err := TransferNTX_Send(ntx)
 					if err != nil {
 						depositFail(depositTry, model.ZERO)
 						continue

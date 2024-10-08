@@ -10,6 +10,7 @@ import (
 
 /*
 	( 6. NFT 구매 결과 콜백  )
+	http://service.server.com:8080/api/v1/nft/buy/callback
 
 	method : post
 	content-type : application/json

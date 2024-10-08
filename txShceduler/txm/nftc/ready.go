@@ -1,7 +1,9 @@
 package nftc
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
+	"jcloudnet/itype"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/jeth/ecs"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
@@ -92,8 +94,14 @@ func Start(classic *chttp.Classic) runtext.Starter {
 	return rtx
 }
 
-func Sender() *ecsx.Sender {
-	return ecsx.New(inf.Mainnet(), inf.InfuraKey())
+func Finder() *itype.IClient {
+	return itype.New(ecs.RPC_URL(inf.Mainnet()), false, inf.InfuraKey())
+}
+
+func Sender() *ebcm.Sender {
+	s := Finder()
+	sender := s.EBCMSender(ecs.TxSigner{})
+	return sender
 }
 
 func _logtag(tag string, a ...interface{}) []interface{} {

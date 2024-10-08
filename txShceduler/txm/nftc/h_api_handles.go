@@ -1,12 +1,12 @@
 package nftc
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"net/http"
 	"sync"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
@@ -34,6 +34,7 @@ func hNftVersion() {
 	/*
 		Comment : NFT 개발 버전확인
 		Method : GET
+		URL : http://scheduler.server.org:8080/nft/version
 		Response :
 		{
 			"success" : true,
@@ -66,6 +67,7 @@ func hMasterInfo() {
 	/*
 		Comment : NFT 마스터 주소 및 잔액 조회
 		Method : GET
+		URL : http://scheduler.server.org:8080/nft/master_info
 
 		Response :
 		{
@@ -86,7 +88,7 @@ func hMasterInfo() {
 			info := cMasterInfo{
 				NFTContractAddress:      nftToken.Contract,
 				NFTOwnerAddress:         nftToken.Address,
-				NFTOwnerETHPrice:        Sender().CoinPrice(nftToken.Address),
+				NFTOwnerETHPrice:        Finder().GetCoinPrice(nftToken.Address),
 				NFTDepositMasterAddress: depositAddress(),
 			}
 
@@ -99,6 +101,7 @@ func hTxLog() {
 	/*
 		Comment : NFT 트랜젝션 로그 조회
 		Method : POST (application/json)
+		URL : http://scheduler.server.org:8080/nft/txlog
 		Param :
 		{
 			"kind" string			// Transfer(소유권이전), Mint(발행), Burn(소각), 미입력시 모두(ALL)
@@ -228,6 +231,7 @@ func hSalePendingReceipt() {
 	/*
 		Comment : NFT ReceiptCode 값으로 현재 구매 진행상태 요청
 		Method : POST
+		URL : http://scheduler.server.org:8080/nft/sale/find/receipt_code
 		-------------------------------------------------------------------
 		Params :
 		{
@@ -370,6 +374,7 @@ func hSaleBuyTry() {
 	/*
 		Comment : NFT 상품 구매요청 ( 회원구매(무료/유료), 비회원구매(무료) )
 		Method : POST
+		URL : http://scheduler.server.org:8080/nft/sale/buy_try
 		-------------------------------------------------------------------
 		Params :
 		{
@@ -444,7 +449,7 @@ func hSaleBuyTry() {
 					}
 
 					if cdata.IsExternalAddress {
-						if ecsx.IsAddress(cdata.MemberAddress) == false {
+						if ebcm.IsAddress(cdata.MemberAddress) == false {
 							chttp.Fail(w, ack.InvalidAddress)
 							return
 						}
@@ -466,7 +471,7 @@ func hSaleBuyTry() {
 
 						revTry := model.NftDepositTry{
 							NftRevData: revData,
-							Snap:       ecsx.GasSnapShot{},
+							Snap:       ebcm.GasSnapShot{},
 						}
 
 						receiptCode, err := revTry.InsertTryDB(db)
@@ -488,7 +493,7 @@ func hSaleBuyTry() {
 					payAddress := cdata.MemberAddress
 					payPrivate := member.PrivateKey()
 
-					snap := ecsx.GasSnapShot{}
+					snap := ebcm.GasSnapShot{}
 					if cdata.IsPayFree == false {
 						token := inf.TokenList().GetSymbol(cdata.PaySymbol)
 						if token.Valid() == false {
@@ -507,20 +512,28 @@ func hSaleBuyTry() {
 							return
 						}
 
-						ethPrice := Sender().CoinPrice(payAddress)
+						ethPrice := Finder().GetCoinPrice(payAddress)
+
 						if token.Symbol == model.ETH {
 
 							if jmath.CMP(ethPrice, cdata.PayPrice) <= 0 {
 								chttp.Fail(w, ack.NFTBuyPrice)
 								return
 							}
-							ntx, _ := Sender().EthTransferNTX(
+							// ntx, _ := Sender().EthTransferNTX(
+							// 	payPrivate,
+							// 	depositAddress(),
+							// 	ecsx.ETHToWei(cdata.PayPrice),
+							// 	gasSpeed,
+							// 	nil,
+							// )
+
+							ntx, _ := TransferEtherNTX(
 								payPrivate,
 								depositAddress(),
-								ecsx.ETHToWei(cdata.PayPrice),
-								gasSpeed,
-								nil,
+								ebcm.ETHToWei(cdata.PayPrice),
 							)
+
 							gasETH := ntx.GasFeeETH()
 							needETH := jmath.ADD(gasETH, cdata.PayPrice)
 							if jmath.CMP(ethPrice, needETH) < 0 {
@@ -535,22 +548,29 @@ func hSaleBuyTry() {
 								chttp.Fail(w, ack.NFTBuyPrice)
 								return
 							}
-							tkPrice := Sender().TokenPrice(payAddress, token.Contract, token.Decimal)
+							tkPrice := Finder().Price(payAddress, token.Contract, token.Decimal)
 							if jmath.CMP(tkPrice, cdata.PayPrice) < 0 {
 								chttp.Fail(w, ack.NFTBuyPrice)
 								return
 							}
-							ts := Sender().TSender(token.Contract)
-							ntx, _ := ts.TransferFuncNTX(
+							// ts := Sender().TSender(token.Contract)
+							// ntx, _ := ts.TransferFuncNTX(
+							// 	payPrivate,
+							// 	ecsx.TransferPadBytes(
+							// 		depositAddress(),
+							// 		ecsx.TokenToWei(cdata.PayPrice, token.Decimal),
+							// 	),
+							// 	"0",
+							// 	gasSpeed,
+							// 	nil,
+							// )
+							ntx, _ := TransferTokenNTX(
+								token.Contract,
 								payPrivate,
-								ecsx.TransferPadBytes(
-									depositAddress(),
-									ecsx.TokenToWei(cdata.PayPrice, token.Decimal),
-								),
-								"0",
-								gasSpeed,
-								nil,
+								depositAddress(),
+								ebcm.TokenToWei(cdata.PayPrice, token.Decimal),
 							)
+
 							gasETH := ntx.GasFeeETH()
 							if jmath.CMP(ethPrice, gasETH) < 0 {
 								chttp.Fail(w, ack.NFTBuyPrice)
@@ -603,6 +623,7 @@ func hTransferTry() {
 	/*
 		Comment : 회원의 NFT토큰을 다른주소(다른회원/비회원)로 소유권 이전
 		Method : POST
+		URL : http://scheduler.server.org:8080/nft/transfer/change_owner
 		-------------------------------------------------------------------
 		Param :
 		{
@@ -670,7 +691,7 @@ func hTransferTry() {
 				return
 			}
 
-			if !ecsx.IsAddress(cdata.ToAddress) {
+			if !ebcm.IsAddress(cdata.ToAddress) {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
@@ -709,13 +730,13 @@ func hTransferTry() {
 					return
 				}
 
-				memberETH := Sender().CoinPrice(member.Address)
+				memberETH := Finder().GetCoinPrice(member.Address)
 				if jmath.CMP(memberETH, ntx.GasFeeETH()) < 0 {
 					chttp.Fail(w, ack.NFTBuyPrice)
 					return
 				}
 
-				hash, err := NFT{}.TransferFromSEND(ntx)
+				hash, err := TransferNTX_Send(ntx)
 				if err != nil {
 					chttp.Fail(w, ack.NFTTTransferFail)
 					return
@@ -750,6 +771,7 @@ func hTransferCheckPending() {
 	/*
 		Comment : 소유권 이전중인 토큰의 전송여부 체크
 		Method : POST
+		URL : http://scheduler.server.org:8080/nft/transfer/check_pending
 		-------------------------------------------------------------------
 		Param :
 		{
@@ -839,6 +861,7 @@ func hOwnerList() {
 	/*
 		Comment : 회원/비회원(회사에서 발급) 이 소유하고 있는 NFT상품 리스트 요청
 		Method : POST
+		URL : http://scheduler.server.org:8080/nft/owner/list
 		-------------------------------------------------------------------
 		Param :
 		{
