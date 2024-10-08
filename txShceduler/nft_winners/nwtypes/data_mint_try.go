@@ -1,7 +1,7 @@
 package nwtypes
 
 import (
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx/jwalletx"
+	"jtools/cloud/jeth/jwallet"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/txm/inf"
@@ -28,7 +28,7 @@ func (my WalletInfo) UserPrivateKey() string {
 		return ""
 	}
 	seed := inf.Config().Seed
-	wallet := jwalletx.NewSeed(seed, my.UID)
+	wallet := jwallet.NewSeed(seed, my.UID)
 	return wallet.PrivateKey()
 }
 

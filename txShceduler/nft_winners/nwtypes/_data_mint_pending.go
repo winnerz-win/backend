@@ -1,7 +1,7 @@
 package nwtypes
 
 // import (
-// 	"txscheduler/brix/tools/unix"
+// 	"jtools/unix"
 // )
 
 // type NftMintPendingData struct {

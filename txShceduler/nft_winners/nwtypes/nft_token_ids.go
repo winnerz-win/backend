@@ -1,8 +1,8 @@
 package nwtypes
 
 import (
+	"jtools/jmath"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/nft_winners/nwdb"
 )
 

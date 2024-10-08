@@ -1,6 +1,7 @@
 package txm
 
 import (
+	"jtools/cc"
 	"time"
 	"txscheduler/brix/tools"
 	"txscheduler/brix/tools/console"
@@ -45,6 +46,10 @@ func Start(
 		inf.InitConfig("config.yaml", mainnet)
 	}
 
+	if args.Do(inf.AdminSpear) {
+		inf.SetAdminSpear()
+	}
+
 	inf.InitMongo("mongo.yaml")
 
 	corsHeader := []string{
@@ -61,6 +66,8 @@ func Start(
 		config.DB,
 	)
 	dbg.SetLogWriteln(logger.Writeln)
+	inf.SetFileLogWriter(logger.Writeln)
+	cc.SetFileLogWriter(logger.Writeln)
 
 	classic := chttp.NewClassicLogger(
 		port,
@@ -139,6 +146,7 @@ func Start(
 			for i := 0; i < 3; i++ {
 				dbg.PrintForce("Wallet-Seed :", config.Seed, config.Mainnet)
 			}
+			dbg.Green("FIRST_ERC_20 :", inf.FirstERC20())
 			dbg.Green("-------------------------------------------")
 			break
 		} //for

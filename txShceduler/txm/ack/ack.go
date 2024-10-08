@@ -57,4 +57,21 @@ var (
 	NFT_NotfoundOwner     = chttp.Error(3015, "NFT Not found owner")
 	NFT_ReceiptCodeFormat = chttp.Error(3016, "NFT invalid receiptCode format")
 	NFT_SameBaseURI       = chttp.Error(3017, "NFT baseURI가 기존과 동일합니다.")
+
+	OWNER_NotFoundData = chttp.Error(6000, "[OwnerTask] 요청한 데이터를 찾을수 없습니다.")
+	OWNER_RpcFail      = chttp.Error(6001, "[OwnerTask] Blockchain rpc node 응답 실패")
+
+	OWNER_ALREADY_LOCKED = chttp.Error(6002, "already locked address.")
+	OWNER_REQ_JOB_ONCE   = chttp.Error(6003, "락업관련 예약중이 작업이 존재함.")
+
+	OWNER_Transfer_SameAddress     = chttp.Error(6101, "[OwnerTransfer] recipient is same user.")
+	OWNER_Transfer_EmptyDatas      = chttp.Error(6102, "[OwnerTransfer] transfers is empty.")
+	OWNER_Transfer_Price           = chttp.Error(6103, "[OwnerTransfer] price is under zero.")
+	OWNER_Transfer_ReleaseTime     = chttp.Error(6104, "[OwnerTransfer] release_time less current server time.")
+	OWNER_Transfer_MemberRecipient = chttp.Error(6105, "[OwnerTransfer] recipient is member.")
+
+	OWNER_Lock_OverPrice = chttp.Error(6201, "[OwnerLock] 락업 요청 금액이 보유잔액 보다 클경우")
+
+	OWNER_Unlock_PositionIndex   = chttp.Error(6301, "[OwnerUnlock] position_index가 rpc-node의 정보와 불일치.")
+	OWNER_Unlock_AlreadyTimeOver = chttp.Error(6302, "[OwnerUnlock] 이미 락업 해재 시간이 지났을경우.")
 )
