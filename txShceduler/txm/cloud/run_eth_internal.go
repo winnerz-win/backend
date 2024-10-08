@@ -1,12 +1,12 @@
 package cloud
 
 import (
+	"jcloudnet/etherscan/etherscanapi"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/mms"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/EtherScanAPI"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
@@ -32,12 +32,12 @@ EXIT:
 		default:
 		} //select
 
-		list := ecsx.TransactionBlockList{}
+		list := ebcm.TransactionBlockList{}
 
-		cfg := EtherScanAPI.NewConfig(inf.Mainnet(), inf.ESKey())
+		cfg := etherscanapi.NewConfig(inf.Mainnet(), inf.ESKey())
 
 		lastNumber := startNumber
-		txlist := ecsx.GetInternalTransaction(cfg, contract, startNumber)
+		txlist := etherscanapi.GetInternalTransactionAPI(cfg, contract, startNumber)
 		for _, tx := range txlist {
 			if jmath.CMP(tx.BlockNumber, lastNumber) > 0 {
 				lastNumber = tx.BlockNumber
@@ -48,13 +48,13 @@ EXIT:
 			if tx.IsContract {
 				info := tokenInfos.GetContract(tx.ContractAddress)
 				if info.Valid() {
-					item := ecsx.NewTxBlockInternal(tx)
+					item := NewTxBlockInternal(tx)
 					item.Symbol = info.Symbol
 					item.Decimals = info.Decimal
 					list = append(list, item)
 				}
 			} else {
-				item := ecsx.NewTxBlockInternal(tx)
+				item := NewTxBlockInternal(tx)
 				item.Symbol = model.ETH
 				item.ContractAddress = "eth"
 				item.Decimals = "18"
@@ -74,4 +74,25 @@ EXIT:
 
 	} //for
 
+}
+
+// NewTxBlockInternal :
+func NewTxBlockInternal(tx etherscanapi.InternalTransaction) ebcm.TransactionBlock {
+	item := ebcm.TransactionBlock{
+		IsInternal:      true,
+		IsContract:      tx.IsContract,
+		ContractAddress: tx.ContractAddress,
+		Hash:            tx.Hash,
+		From:            tx.From,
+		To:              tx.To,
+		Amount:          tx.Value,
+		CustomInput:     tx.Input,
+		IsError:         tx.IsError,
+		Type:            ebcm.TxType(jmath.Int(tx.Type)),
+		Gas:             tx.Gas,
+		GasUsed:         tx.GasUsed,
+		TradeID:         tx.TradeID,
+		ErrCode:         tx.ErrCode,
+	}
+	return item
 }

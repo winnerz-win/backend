@@ -1,13 +1,15 @@
 package cloud
 
 import (
+	"context"
+	"jtools/cc"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/mms"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jticker"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
@@ -35,7 +37,7 @@ func runETHCharger(rtx runtext.Runner) {
 					checker := get_sender_x()
 					//result := checker.Receipt(item.Hash)
 
-					result, _, _, _ := checker.TransactionByHash(item.Hash)
+					result, _, _ := checker.TransactionByHash(item.Hash)
 					if !result.IsReceiptedByHash {
 						continue
 					}
@@ -71,9 +73,17 @@ func runETHCharger(rtx runtext.Runner) {
 				return
 			}
 
-			speed := ecsx.GasAverage
 			from := inf.Charger()
 			sender := get_sender_x()
+
+			nonce, err := ebcm.MMA_GetNonce(
+				sender,
+				from.Address,
+			)
+			if err != nil {
+				dbg.Red("ebcm.MMA_GetNonce ::: ", err)
+				return
+			}
 
 			fromWEI := sender.Balance(from.Address)
 			if jmath.CMP(fromWEI, 0) <= 0 {
@@ -84,85 +94,129 @@ func runETHCharger(rtx runtext.Runner) {
 				return
 			}
 
+			ctx := context.Background()
+
+			gas_price, err := sender.SuggestGasPrice(ctx)
+			if err != nil {
+				dbg.RedBG("charger.SuggestGasPrice ::", err)
+				for _, group := range groupBy {
+					group.RemoveForError(db)
+				}
+				return
+			}
+
 			type BOX struct {
 				group model.TxChargeGroup
-				box   ecsx.GasBoxData
+
+				TransferData
+				// padbytes ebcm.PADBYTES
+				// limit    uint64
+				// nonce    uint64
+
+				// wei string
+
+				// stx ebcm.WrappedTransaction
 			}
+
+			nonceCounter := nonce
 			boxlist := []BOX{}
 			for _, group := range groupBy {
-				wei := ecsx.ETHToWei(group.Price)
-				box := sender.GasBox("eth", from.Address, group.Address, wei, speed)
-				if box.Error != nil {
-					dbg.Red("runETHCharger.box :", box.Error)
+				if jmath.CMP(fromWEI, 0) < 0 {
+					cc.RedItalic("charger.remain_coin_price is zero.")
 					group.RemoveForError(db)
 					continue
 				}
+
+				wei := ebcm.ETHToWei(group.Price)
+
+				padbytes := ebcm.PadByteETH()
+
+				limit, err := sender.EstimateGas(
+					ctx,
+					ebcm.MakeCallMsg(
+						from.Address,
+						group.Address,
+						wei,
+						padbytes,
+					),
+				)
+				if err != nil {
+					cc.RedItalic("charger.EstimateGas :: ", err)
+					group.RemoveForError(db)
+					continue
+				}
+
+				est_gas_wei := gas_price.EstimateGasFeeWEI(limit)
+
+				fromWEI = jmath.SUB(fromWEI, est_gas_wei)
+				if jmath.CMP(fromWEI, 0) < 0 {
+					cc.RedItalic("charger.remain_coin_price is zero.")
+					group.RemoveForError(db)
+					continue
+				}
+
+				ntx := sender.NewTransaction(
+					nonceCounter,
+					group.Address,
+					wei,
+					limit,
+					gas_price,
+					padbytes,
+				)
+
+				stx, err := sender.SignTx(
+					ntx,
+					from.PrivateKey,
+				)
+				if err != nil {
+					cc.RedItalic("charger.SignTx :::", err)
+					group.RemoveForError(db)
+					continue
+				}
+
 				boxlist = append(boxlist, BOX{
 					group: group,
-					box:   box,
+					TransferData: TransferData{
+						padbytes: padbytes,
+						limit:    limit,
+						wei:      wei,
+						nonce:    nonceCounter,
+						stx:      stx,
+					},
 				})
+
+				nonceCounter++
 			} //for
 
-			nonce, err := sender.Nonce(from.PrivateKey)
-			if err != nil {
-				dbg.RedItalic("charger.NONCE :", err)
-				return
-			}
-			type NTX struct {
-				group model.TxChargeGroup
-				tx    *ecsx.NTX
-			}
-			ntxlist := []NTX{}
-			var nonceCounter uint64 = 0
-			for _, v := range boxlist {
-				if ntx, err := nonce.BoxTx(v.box, nonceCounter); err == nil {
-					ntxlist = append(ntxlist, NTX{
-						group: v.group,
-						tx:    ntx,
-					})
-					nonceCounter++
+			is_err_stop := false
+			for _, box := range boxlist {
+
+				if is_err_stop {
+					box.group.RemoveForError(db)
+					continue
 				}
-			} //for
 
-			type STX struct {
-				group model.TxChargeGroup
-				tx    *ecsx.STX
-			}
-			stxlist := []STX{}
-			for _, v := range ntxlist {
-				if stx, err := v.tx.Tx(); err == nil {
-					stxlist = append(stxlist, STX{
-						group: v.group,
-						tx:    stx,
-					})
+				hash, err := sender.SendTransaction(
+					ctx,
+					box.stx,
+				)
+				if err != nil {
+					is_err_stop = true
+					box.group.RemoveForError(db)
+					continue
 				}
-			} //for
 
-			type SEND struct {
-				group model.TxChargeGroup
-				hash  string
-			}
-			sendlist := []SEND{}
-			for _, v := range stxlist {
-				if err := v.tx.Send(); err == nil {
-					sendlist = append(sendlist, SEND{
-						group: v.group,
-						hash:  v.tx.Hash(),
-					})
-				}
-			} //for
-
-			for _, v := range sendlist {
-				for _, item := range v.group.List {
+				for _, item := range box.group.List {
 					logCharger("Send [", item.UID, "]", item.Address, item.Price)
 					db.C(inf.TXETHCharger).Update(
 						item.Selector(),
 						mongo.Bson{"$set": mongo.Bson{
-							"hash":  v.hash,
+							"hash":  hash,
 							"state": model.TxStatePending,
 						}},
 					)
 				} //for
+
 			} //for
 
 		})

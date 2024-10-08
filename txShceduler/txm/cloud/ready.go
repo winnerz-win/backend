@@ -1,15 +1,21 @@
 package cloud
 
 import (
+	"jcloudnet/itype"
+	"jtools/cloud/ebcm"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/dbg"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/inf"
 )
 
-func get_sender_x() *ecsx.Sender {
-	return ecsx.New(inf.Mainnet(), inf.InfuraKey())
+// func get_sender_x() *ebcm.Sender {
+func get_sender_x() *ebcm.Sender {
+	return inf.GetSender()
+}
+
+func get_finder() *itype.IClient {
+	return inf.GetFinder()
 }
 
 // Ready :
@@ -20,14 +26,42 @@ func Ready() runtext.Starter {
 		return rtx
 	}
 
+	_cloud_master_console()
+
 	ethDriver := func() {
+
 		go runSyncCoin(rtx)
-		go runETHWithdraw(rtx)
 		go runETHCharger(rtx)
 		go runETHDepositToMaster(rtx)
 		go runETHDepositChn(rtx)
 		go runETHCollection(rtx)
 		go runSELFWithdraw(rtx)
+
+		if inf.Master().Address != inf.Owner().Address {
+			dbg.Yellow("MASTER <> OWNER  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
+			go runETHWithdraw(rtx, false)
+			if inf.IsOnwerTaskMode() {
+				go runOwnerTaskLogSender()
+				go runOwnerTaskAction(rtx)
+			}
+		} else {
+			same_tag := "============= MASTER == OWNER  ==========================================="
+			dbg.Yellow(same_tag)
+			go func() {
+				for i := 0; i < 10; i++ {
+					dbg.Yellow(same_tag)
+					time.Sleep(time.Second)
+				}
+			}()
+
+			is_owner_master_same := true
+			if !inf.IsOnwerTaskMode() {
+				is_owner_master_same = false
+			}
+			go runETHWithdraw(rtx, is_owner_master_same)
+		}
+
 	}
 	_ = ethDriver
 
@@ -74,4 +108,14 @@ func logCharger(a ...interface{}) {
 
 func logWithdraw(a ...interface{}) {
 	dbg.Purple(logTag("[Withdraw]", a...)...)
+}
+
+type TransferData struct {
+	padbytes ebcm.PADBYTES
+	limit    uint64
+	nonce    uint64
+
+	wei string
+
+	stx ebcm.WrappedTransaction
 }

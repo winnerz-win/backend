@@ -1,12 +1,11 @@
 package cloud
 
 import (
+	"jtools/mms"
 	"strings"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
@@ -37,7 +36,7 @@ EXIT:
 				return
 			}
 
-			tokenmap := map[string]*ecsx.Token{}
+			tokenmap := map[string]inf.ERC20{}
 			tokenlist := inf.TokenList()
 			for _, c := range tokenlist {
 				if !strings.HasPrefix(c.Contract, "0x") {
@@ -53,7 +52,7 @@ EXIT:
 					)
 					return
 				}
-				token := checker.Token(c.Contract)
+				token := inf.GetERC20(checker, c.Contract)
 				if !token.Valid() {
 					continue
 				}
@@ -74,7 +73,7 @@ EXIT:
 					return
 				}
 				model.LockMember(db, sc.Address, func(member model.Member) {
-					member.UpdateCoinDB_Legacy(db, checker)
+					member.UpdateCoinDB_Legacy(db)
 				})
 
 				sc.RemoveDB(db)

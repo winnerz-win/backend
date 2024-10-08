@@ -1,28 +1,40 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
+	"jtools/cc"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/mms"
+	"sync"
 	"time"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 	"txscheduler/txm/nftc"
 )
 
+var (
+	cms_once = sync.Once{}
+)
+
 func runETHCollection(rtx runtext.Runner) {
 	defer dbg.PrintForce("cloud.runETHCollection ----------  END")
 	<-rtx.WaitStart()
 	dbg.PrintForce("cloud.runETHCollection ----------  START")
+	TAG := "[run_eth_collection] "
 
 	sleepNormal := time.Second * 3
 	_ = sleepNormal
 	txCnt := model.NewTxETHCounter(inf.Mainnet(), "0")
 	txCnt.LoadFromDB()
+
+	if nftc.IsRun() {
+		ebcm.MMA_MethodID_Append("cloud.CMS", &cms_once, nftc.CMS())
+	}
 
 	isview := false
 	isStart := false
@@ -34,7 +46,7 @@ EXIT:
 		default:
 		} //select
 
-		finder := get_sender_x()
+		finder := get_finder()
 		if finder == nil {
 			model.LogError.InsertLog(
 				model.ErrorFinderNull,
@@ -44,13 +56,23 @@ EXIT:
 			continue
 		}
 
-		if nftc.IsRun() {
-			finder.SetCustomMethods(nftc.CMS()...)
+		// if nftc.IsRun() {
+		// 	finder := get_sender_x()
+		// 	finder.SetCustomMethods(nftc.CMS()...)
+		// }
+
+		ctx := context.Background()
+		n, err := finder.BlockNumber(ctx)
+		if err != nil {
+			cc.Red(TAG, "finder.BlockNumber :", err)
+			time.Sleep(sleepNormal)
+			continue
 		}
+		lastNumber := jmath.VALUE(n)
 
 		number := txCnt.Number
-		lastNumber := finder.BlockNumberTry(number)
 		if number == "0" {
+			cc.Gray("chain_last_number : ", lastNumber, ", db_number:", txCnt.Number)
 			txCnt.Number = lastNumber
 			number = lastNumber
 		}
@@ -76,8 +98,10 @@ EXIT:
 			continue
 		}
 
-		data := finder.BlockByNumber(number, false)
+		data := finder.BlockByNumber(number)
+		//data := finder.BlockByNumber(number, false)
 		if data == nil {
+			cc.Red(TAG, "finder.BlockByNumber dats is null. (", number, ")")
 			time.Sleep(sleepNormal)
 			continue
 		}
@@ -86,8 +110,8 @@ EXIT:
 			nftc.GetTxList(number, data.TxList, true)
 		}
 
-		list := ecsx.TransactionBlockList{}
-		txs := data.GetTransferList()
+		list := ebcm.TransactionBlockList{}
+		txs := data.TxList
 		for _, tx := range txs {
 			// if tx.IsError {	//에러난것도 일딴 수집한다.
 			// 	continue
@@ -133,17 +157,21 @@ EXIT:
 
 }
 
-func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal bool) error {
+func processTxlist(list ebcm.TransactionBlockList, nowAt mms.MMS, isInternal bool) error {
 
 	depositList := ETHDepositList{}
 	_ = depositList
 
 	err := model.DB(func(db mongo.DATABASE) {
+
+		finder := get_finder()
+
 		for _, tx := range list {
 
 			//마스터지갑으로 들어온 코인
 			if tx.To == inf.Master().Address {
-				tx.ErrorCheck(get_sender_x())
+
+				finder.InjectReceipt(&tx, finder.ReceiptByHash(tx.Hash))
 				if !tx.IsError {
 					innerToMaster(db, tx, nowAt)
 				}
@@ -155,11 +183,10 @@ func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal boo
 				continue
 			}
 			if !isInternal {
-				tx.TxBlockReceipt(get_sender_x())
-				//tx.CalcTransactionFee(ecsx.New(inf.Mainnet(), inf.InfuraKey()))
+				finder.InjectReceipt(&tx, finder.ReceiptByHash(tx.Hash))
+			} else {
+				finder.InjectReceipt(&tx, finder.ReceiptByHash(tx.Hash))
 			}
-
-			tx.ErrorCheck(get_sender_x())
 
 			// if tx.IsError {
 			// 	continue
@@ -167,13 +194,13 @@ func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal boo
 			if tx.From == inf.Charger().Address {
 				if !tx.IsError {
 					model.LockMember(db, tx.To, func(member model.Member) {
-						price := ecsx.WeiToToken(tx.Amount, tx.Decimals)
+						price := ebcm.WeiToToken(tx.Amount, tx.Decimals)
 						member.Coin.ADD(tx.Symbol, price)
 						member.UpdateDB(db)
 
 						model.CoinSumAdd(db, tx.Symbol, price)
 
-						member.UpdateCoinDB_Legacy(db, get_sender_x())
+						member.UpdateCoinDB_Legacy(db)
 						logCharger("Recv [", member.UID, "]", member.Address, price)
 					})
 				}
@@ -191,7 +218,7 @@ func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal boo
 			}
 
 			model.LockMember(db, tx.To, func(member model.Member) {
-				price := ecsx.WeiToToken(tx.Amount, tx.Decimals)
+				price := ebcm.WeiToToken(tx.Amount, tx.Decimals)
 				if !tx.IsError {
 					member.Coin.ADD(tx.Symbol, price)
 					member.Deposit.ADD(tx.Symbol, price)
@@ -201,7 +228,7 @@ func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal boo
 					model.CoinDay{}.AddDeposit(db, tx.Symbol, price, nowAt)
 				}
 
-				member.UpdateCoinDB_Legacy(db, get_sender_x())
+				member.UpdateCoinDB_Legacy(db)
 
 				log := model.LogDeposit{
 					User:     member.User,
@@ -246,13 +273,13 @@ func processTxlist(list ecsx.TransactionBlockList, nowAt mms.MMS, isInternal boo
 }
 
 // innerToMaster : 외부에서 마스터지갑으로 들어온것들 처리.
-func innerToMaster(db mongo.DATABASE, tx ecsx.TransactionBlock, nowAt mms.MMS) {
+func innerToMaster(db mongo.DATABASE, tx ebcm.TransactionBlock, nowAt mms.MMS) {
 	member := model.LoadMemberAddress(db, tx.From)
 	if member.Valid() {
 		return
 	}
 
-	price := ecsx.WeiToToken(tx.Amount, tx.Decimals)
+	price := ebcm.WeiToToken(tx.Amount, tx.Decimals)
 	item := model.LogExMaster{
 		Hash:     tx.Hash,
 		From:     tx.From,
