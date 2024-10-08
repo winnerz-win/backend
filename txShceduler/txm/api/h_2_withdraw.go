@@ -1,13 +1,13 @@
 package api
 
 import (
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
+	"jtools/mms"
 	"net/http"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
@@ -71,12 +71,12 @@ func hWithdrawTry() {
 			cdata.FromAddress = dbg.TrimToLower(cdata.FromAddress)
 			cdata.ToAddress = dbg.TrimToLower(cdata.ToAddress)
 
-			if ecsx.IsAddress(cdata.ToAddress) == false {
+			if ebcm.IsAddress(cdata.ToAddress) == false {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
 
-			if jmath.IsUnderZero(cdata.Price) {
+			if jmath.CMP(cdata.Price, 0) <= 0 {
 				chttp.Fail(w, ack.UnderZERO)
 				return
 			}

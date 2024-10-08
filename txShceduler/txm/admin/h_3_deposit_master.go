@@ -1,9 +1,9 @@
 package admin
 
 import (
+	"jtools/jmath"
 	"net/http"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/doc"
 	"txscheduler/txm/ack"
@@ -92,9 +92,9 @@ func hDepositToMasterOne() {
 
 			if len(list) > 0 {
 				cloud.ETHDepositChan <- list
-			}
 
-			chttp.OK(w, struct{}{})
+				chttp.OK(w, struct{}{})
+			}
 
 		},
 	)

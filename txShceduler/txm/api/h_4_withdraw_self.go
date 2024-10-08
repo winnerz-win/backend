@@ -1,12 +1,17 @@
 package api
 
 import (
+	"context"
+	"jcloudnet/itype"
+	"jtools/cc"
+	"jtools/cloud/ebcm"
+	"jtools/cloud/jeth/ecs"
+	"jtools/jmath"
+	"jtools/mms"
 	"net/http"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
+	"txscheduler/brix/tools/database/mongo/tools/dbg"
 	"txscheduler/brix/tools/jnet/chttp"
-	"txscheduler/brix/tools/mms"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
@@ -18,8 +23,13 @@ func init() {
 	hUserWithdrawResult()
 }
 
-func Sender() *ecsx.Sender {
-	return ecsx.New(inf.Mainnet(), inf.InfuraKey())
+func Caller() *itype.IClient {
+	return itype.New(ecs.RPC_URL(inf.Mainnet()), false, inf.InfuraKey())
+}
+
+func Sender() *ebcm.Sender {
+	s := Caller()
+	return s.EBCMSender(ecs.TxSigner{})
 }
 
 func hUserWithdrawInfo() {
@@ -96,15 +106,15 @@ func hUserWithdrawInfo() {
 
 			model.Trim(&cdata.FromAddress)
 			model.Trim(&cdata.ToAddress)
-			if jmath.IsUnderZero(cdata.Price) {
+			if jmath.CMP(cdata.Price, 0) <= 0 {
 				chttp.Fail(w, ack.UnderZERO)
 				return
 			}
-			if !ecsx.IsAddress(cdata.FromAddress) {
+			if !ebcm.IsAddress(cdata.FromAddress) {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
-			if !ecsx.IsAddress(cdata.ToAddress) {
+			if !ebcm.IsAddress(cdata.ToAddress) {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
@@ -128,13 +138,14 @@ func hUserWithdrawInfo() {
 				cloudSymbol := model.ZERO
 				estimateFEE := model.ZERO
 
-				memberGAS := Sender().CoinPrice(member.Address)
+				caller := Caller()
+				member_eth_price := caller.GetCoinPrice(member.Address)
 				if cdata.Symbol == model.ETH {
-					cloudSymbol = memberGAS
+					cloudSymbol = member_eth_price
 				}
-				cloudSymbol = Sender().TokenPrice(member.Address, token.Contract, token.Decimal)
+				cloudSymbol = caller.Price(member.Address, token.Contract, token.Decimal)
 
-				if jmath.IsUnderZero(memberGAS) {
+				if jmath.CMP(member_eth_price, 0) <= 0 {
 					chttp.OK(w, RESULT{
 						Symbol:            cdata.Symbol,
 						RemainSymbolPrice: cloudSymbol,
@@ -144,12 +155,14 @@ func hUserWithdrawInfo() {
 					return
 				}
 
-				cloudETH = memberGAS
+				cloudETH = member_eth_price
 
-				padBytes := ecsx.PadBytes{}
+				var padBytes ebcm.PADBYTES
 				sendWEI := model.ZERO
+				send_To := ""
+
 				if cdata.Symbol == model.ETH {
-					if jmath.CMP(memberGAS, cdata.Price) <= 0 {
+					if jmath.CMP(member_eth_price, cdata.Price) <= 0 {
 						chttp.OK(w, RESULT{
 							Symbol:            cdata.Symbol,
 							RemainSymbolPrice: cloudSymbol,
@@ -158,13 +171,16 @@ func hUserWithdrawInfo() {
 						})
 						return
 					}
-					memberGAS = jmath.SUB(memberGAS, cdata.Price)
+					member_eth_price = jmath.SUB(member_eth_price, cdata.Price)
+					_ = member_eth_price
 
-					padBytes = ecsx.PadBytesETH()
-					sendWEI = ecsx.TokenToWei(cdata.Price, 18)
+					padBytes = ebcm.PadByteETH()
+					sendWEI = ebcm.TokenToWei(cdata.Price, 18)
+
+					send_To = cdata.ToAddress
 
 				} else {
-					tokenPRICE := Sender().TokenPrice(member.Address, token.Contract, token.Decimal)
+					tokenPRICE := caller.Price(member.Address, token.Contract, token.Decimal)
 					if jmath.CMP(tokenPRICE, cdata.Price) < 0 {
 						chttp.OK(w, RESULT{
 							Symbol:            cdata.Symbol,
@@ -174,21 +190,26 @@ func hUserWithdrawInfo() {
 						})
 						return
 					}
-					padBytes = ecsx.PadBytesTransfer(
+					padBytes = ebcm.PadByteTransfer(
 						cdata.ToAddress,
-						ecsx.TokenToWei(cdata.Price, token.Decimal),
+						ebcm.TokenToWei(cdata.Price, token.Decimal),
 					)
 					sendWEI = model.ZERO
+
+					send_To = token.Contract
 
 				}
 
 				sender := Sender()
 
-				gasLimit, err := sender.XGasLimit(
-					padBytes,
-					member.Address,
-					cdata.ToAddress,
-					sendWEI,
+				ctx := context.Background()
+				limit, err := sender.EstimateGas(ctx,
+					ebcm.MakeCallMsg(
+						member.Address,
+						send_To,
+						sendWEI,
+						padBytes,
+					),
 				)
 				if err != nil {
 					chttp.OK(w, RESULT{
@@ -201,8 +222,10 @@ func hUserWithdrawInfo() {
 					return
 				}
 
-				gasPrice := sender.SUGGEST_GAS_PRICE(ecsx.GasFast)
-				if err := gasPrice.Error(); err != nil {
+				limit = ebcm.MMA_LimitBuffer(limit)
+
+				gas_price, err := sender.SuggestGasPrice(ctx, true)
+				if err != nil {
 					chttp.OK(w, RESULT{
 						Symbol:            cdata.Symbol,
 						RemainSymbolPrice: cloudSymbol,
@@ -210,15 +233,16 @@ func hUserWithdrawInfo() {
 						EstimateGasFee:    estimateFEE,
 						IsChainError:      true,
 					})
-					return
 				}
+
+				gas_price.EstimateGasFeeETH(limit)
 
 				chttp.OK(w,
 					RESULT{
 						Symbol:            cdata.Symbol,
 						RemainSymbolPrice: cloudSymbol,
 						RemainETHPrice:    cloudETH,
-						EstimateGasFee:    gasPrice.FeeETH(gasLimit),
+						EstimateGasFee:    gas_price.EstimateGasFeeETH(limit),
 					},
 				)
 
@@ -290,15 +314,15 @@ func hUserWithdrawTry() {
 
 			model.Trim(&cdata.FromAddress)
 			model.Trim(&cdata.ToAddress)
-			if jmath.IsUnderZero(cdata.Price) {
+			if jmath.CMP(cdata.Price, 0) <= 0 {
 				chttp.Fail(w, ack.UnderZERO)
 				return
 			}
-			if !ecsx.IsAddress(cdata.FromAddress) {
+			if !ebcm.IsAddress(cdata.FromAddress) {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
-			if !ecsx.IsAddress(cdata.ToAddress) {
+			if !ebcm.IsAddress(cdata.ToAddress) {
 				chttp.Fail(w, ack.InvalidAddress)
 				return
 			}
@@ -323,96 +347,126 @@ func hUserWithdrawTry() {
 					member.Address,
 					url,
 					func() bool {
-						userGasETH := Sender().CoinPrice(member.Address)
-						if jmath.IsUnderZero(userGasETH) {
-							chttp.Fail(w, ack.NotEnoughGasPrice)
+
+						TAG := dbg.Cat("[SELF_WITHDRAW_API](", member.Address, ") ")
+						cc.Cyan(TAG, "UserTransactionStart ------- START")
+						defer cc.Cyan(TAG, "UserTransactionStart ------- END")
+
+						userGasETH := Caller().GetCoinPrice(member.Address)
+						if jmath.CMP(userGasETH, 0) <= 0 {
+							cc.RedItalic(TAG, "GasFee ETH is 0.")
+							chttp.Fail(
+								w,
+								ack.NotEnoughGasPrice,
+								dbg.Cat("user_coin_price:", userGasETH),
+							)
 							return false
 						}
 
 						to_address := cdata.ToAddress
-						padBytes := ecsx.PadBytes{}
+						var padBytes ebcm.PADBYTES
 						sendWEI := model.ZERO
 						if cdata.Symbol == model.ETH {
 							if jmath.CMP(userGasETH, cdata.Price) <= 0 {
+								cc.RedItalic(TAG, "Less SendTry ETH Price. (", userGasETH, "/", cdata.Price, ")")
 								chttp.Fail(w, ack.NotEnoughTargetPrice)
 								return false
 							}
 							userGasETH = jmath.SUB(userGasETH, cdata.Price)
 
-							padBytes = ecsx.PadBytesETH()
-							sendWEI = ecsx.ETHToWei(cdata.Price)
+							padBytes = ebcm.PadByteETH()
+							sendWEI = ebcm.ETHToWei(cdata.Price)
 
 						} else {
 							to_address = token.Contract //////////
 
-							tokenPRICE := Sender().TokenPrice(member.Address, token.Contract, token.Decimal)
+							tokenPRICE := Caller().Price(member.Address, token.Contract, token.Decimal)
 							if jmath.CMP(tokenPRICE, cdata.Price) < 0 {
+								cc.RedItalic(TAG, "Less SendTry ", token.Symbol, " Price. (", tokenPRICE, "/", cdata.Price, ")")
 								chttp.Fail(w, ack.NotEnoughTargetPrice)
 								return false
 							}
-							padBytes = ecsx.PadBytesTransfer(
+							padBytes = ebcm.PadByteTransfer(
 								cdata.ToAddress,
-								ecsx.TokenToWei(cdata.Price, token.Decimal),
+								ebcm.TokenToWei(cdata.Price, token.Decimal),
 							)
 
 						}
 
 						sender := Sender()
-						//nonce, err := sender.XPendingNonceAt(member.Address)
-						nonce, err := sender.XNonceAt(member.Address)
+
+						nonce, err := ebcm.MMA_GetNonce(
+							sender,
+							member.Address,
+							true,
+						)
 						if err != nil {
-							chttp.Fail(w, ack.ChainNonce)
+							cc.RedItalic(TAG, "MMA_GetNonce : ", err)
+							chttp.Fail(w, ack.ChainNonce, err.Error())
 							return false
 						}
 
-						gasLimit, err := sender.XGasLimit(
-							padBytes,
-							member.Address,
-							to_address,
-							sendWEI,
+						ctx := context.Background()
+						limit, err := sender.EstimateGas(
+							ctx,
+							ebcm.MakeCallMsg(
+								member.Address,
+								to_address,
+								sendWEI,
+								padBytes,
+							),
 						)
 						if err != nil {
+							cc.RedItalic(TAG, "EstimateGas : ", err)
 							chttp.Fail(w, ack.ChainGasLimit)
 							return false
 						}
 
-						gasPrice := sender.SUGGEST_GAS_PRICE(ecsx.GasFast)
-						if err := gasPrice.Error(); err != nil {
+						limit = ebcm.MMA_LimitBuffer(limit)
+
+						gas_price, err := sender.SuggestGasPrice(ctx, true)
+						if err != nil {
+							cc.RedItalic(TAG, "SuggestGasPrice : ", err)
 							chttp.Fail(w, ack.ChainGasPrice)
 							return false
 						}
 
-						feeETH := gasPrice.FeeETH(gasLimit)
+						feeETH := gas_price.EstimateGasFeeETH(limit)
 						if jmath.CMP(userGasETH, feeETH) < 0 {
+							cc.RedItalic(TAG, "Less SendTry ", token.Symbol, " Price. (", userGasETH, "/", feeETH, ")")
 							chttp.Fail(w, ack.NotEnoughGasPrice)
 							return false
 						}
 
-						ntx := sender.XNTX(
-							padBytes,
+						ntx := sender.NewTransaction(
+							nonce,
 							to_address,
 							sendWEI,
-							nonce,
-							gasLimit,
-							gasPrice,
+							limit,
+							gas_price,
+							padBytes,
 						)
-						if err := ntx.Error(); err != nil {
-							chttp.Fail(w, ack.ChainNTX)
-							return false
-						}
 
-						stx := sender.XSTX(member.PrivateKey(), ntx)
-						if err := stx.Error(); err != nil {
+						stx, err := sender.SignTx(
+							ntx,
+							member.PrivateKey(),
+						)
+						if err != nil {
+							cc.RedItalic(TAG, "SignTx : ", err)
 							chttp.Fail(w, ack.ChainSTX)
 							return false
 						}
 
-						if err := sender.XSend(stx); err != nil {
+						hash, err := sender.SendTransaction(
+							ctx,
+							stx,
+						)
+
+						if err != nil {
+							cc.RedItalic(TAG, "SendTransaction : ", err)
 							chttp.Fail(w, ack.ChainSend)
 							return false
 						}
-
-						hash := stx.Hash()
 
 						nowAt := mms.Now()
 						data := model.TxETHWithdraw{
@@ -421,8 +475,8 @@ func hUserWithdrawTry() {
 							ToPrice:   cdata.Price,
 
 							Hash:     hash,
-							GasLimit: jmath.VALUE(gasLimit),
-							GasPrice: jmath.VALUE(gasPrice.ETH()),
+							GasLimit: jmath.VALUE(limit),
+							GasPrice: gas_price.GET_GAS_ETH(),
 							Gas:      feeETH,
 
 							Symbol:    cdata.Symbol,
@@ -434,6 +488,7 @@ func hUserWithdrawTry() {
 						}
 						receiptCode := data.InsertSELF_DB(db)
 
+						cc.Cyan(TAG, "Hash(", hash, ")")
 						r := RESULT{
 							ReceiptCode:    receiptCode,
 							EstimateGasFee: feeETH,

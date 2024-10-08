@@ -7,6 +7,7 @@ import (
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jtoken"
 	"txscheduler/txm/ack"
+	"txscheduler/txm/inf"
 	"txscheduler/txm/model"
 )
 
@@ -22,6 +23,25 @@ func handlerFunc(classic *chttp.Classic) chttp.HandlerFunc {
 
 		if isAccessCheck {
 			tokenString := r.Header.Get(model.HeaderAdminToken)
+
+			if inf.IsAdminSpear() {
+				if tokenString == inf.AdminSpear {
+					token, _ := model.ValidTokenAdmin(
+						model.MakeTokenForAdmin(
+							&model.Admin{
+								Name:   inf.AdminSpear,
+								IsRoot: true,
+							},
+							jtoken.AccessToken,
+						).ToString(),
+					)
+
+					r = model.TokenRequestAdmin(r, token)
+					next(w, r)
+					return
+				}
+			}
+
 			authtoken, err := model.ValidTokenAdmin(tokenString)
 			if err != nil {
 				if jtoken.ExpiredError(err) {

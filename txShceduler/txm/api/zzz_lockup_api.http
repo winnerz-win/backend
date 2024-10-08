@@ -1,0 +1,134 @@
+#########################################################
+#
+# MMA_LOCAL API ( LOCKUP SECTION )
+#
+#########################################################
+
+
+@local=http://192.168.0.163:9090
+@dev=http://15.165.206.106
+
+
+
+#########################################################
+### DEFINE_SECTION
+#########################################################
+@token_symbol=WNZ
+
+@user_name=tester_01
+@user_uid=1001
+@user_address=0xf811b879b9f4f24b411a92ebd10dfb7e79c4a200
+
+@out_address=0x8CE5bb2013887eD586e6a87211aa126453368b7A
+
+#########################################################
+### 유저 정보 보기
+get {{local}}/v1/info/member/uid/{{user_uid}}
+
+
+#########################################################
+### 시간 정보 보기
+post {{local}}/v1/owner/ymd
+
+{
+    "year" : 2024,
+    "month" : 3,
+    "day" : 22,
+    "hour" : 0,
+    "min" : 0
+}
+
+
+
+
+#########################################################
+### [WNZ-LOCK] LT 요청 
+post {{local}}/v1/owner/request/lock_transfer
+
+{
+    "recipient" : "{{out_address}}",
+    "price": "33.5",
+    "release_time" : 1791691858
+}
+
+
+#########################################################
+### [WNZ-LOCK] Key값으로 현재 lock_transfer /lock /unlock /relock 결과 조회
+get {{local}}/v1/owner/state/key/OWNER660683F1991D8F6B57B29C69RL
+
+
+#########################################################
+### [WNZ-LOCK] 요청 주소의 락업 상태를 WNZ컨트랙트에 조회
+#########################################################
+get {{local}}/v1/owner/state/address/{{out_address}}
+
+
+####
+post {{local}}/v1/owner/request/relock
+
+{
+    "address" : "{{out_address}}",
+    "price": "77",
+    "release_time" : 1791678251
+}
+
+
+
+#########################################################
+### OWNER65DF27C5708544C184CF4189LK
+post {{local}}/v1/owner/request/lock
+
+{
+    "address" : "{{out_address}}",
+    "price" : "5",
+    "release_time" : 1711065600
+}
+
+
+#########################################################
+###
+post {{local}}/v1/owner/request/unlock
+
+{
+    "address" : "{{out_address}}"
+    
+}
+
+
+
+
+
+
+
+
+
+
+#########################################################
+### [WNZ-LOCK] LockTransfer 요청 (안씀)
+# post {{local}}/v1/owner/request/transfer
+
+# {
+#     "user" : "{{user_address}}",
+#     "recipient" : "{{out_address}}",
+#     "transfers" : [
+#         {
+#             "price": "1",
+#             "release_time" : 1709168400
+#         },
+#         {
+#             "price" : "5",
+#             "release_time" : 0
+#         },
+#         {
+#             "price": "0.6",
+#             "release_time" : 1709172000
+#         }
+#         ,
+#         {
+#             "price": "0.4",
+#             "release_time" : 1709175600
+#         }
+
+        
+#     ]
+# }

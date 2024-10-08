@@ -1,10 +1,9 @@
 package admin
 
 import (
+	"jtools/jmath"
 	"net/http"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/jnet/doc"
 	"txscheduler/txm/ack"
@@ -30,6 +29,13 @@ type masterInfo struct {
 	SeedInfo       string         `json:"seed_info"`
 
 	Symbols []string `json:"symbols"`
+
+	Owner *ownerInfo `json:"owner,omitempty"`
+}
+
+type ownerInfo struct {
+	Address string            `json:"address"`
+	Token   map[string]string `json:"token"`
 }
 
 func hMasterInfo() {
@@ -50,21 +56,29 @@ func hMasterInfo() {
 
 			masterPrice := map[string]string{}
 			for _, token := range inf.TokenList() {
-				finder := ecsx.New(mainnet, inf.InfuraKey())
-				wei := finder.Balance2(masterAddress, token.Contract)
-				price := ecsx.WeiToToken(wei, token.Decimal)
-				masterPrice[token.Symbol] = price
+				masterPrice[token.Symbol] = inf.GetFinder().Price(masterAddress, token.Contract, token.Decimal)
+
 			}
 
-			finder := ecsx.New(mainnet, inf.InfuraKey())
-			wei := finder.Balance(chargerAddress)
 			chargerPrice := map[string]string{}
-			chargerPrice[model.ETH] = ecsx.WeiToToken(wei, "18")
+			chargerPrice[model.ETH] = inf.GetFinder().GetCoinPrice(chargerAddress)
 
 			memberCount := 0
 			model.DB(func(db mongo.DATABASE) {
 				memberCount, _ = db.C(inf.COLMember).Count()
 			})
+
+			var owner_info *ownerInfo = nil
+			if inf.IsOnwerTaskMode() {
+				owner_address := inf.Owner().Address
+				owner_info = &ownerInfo{
+					Address: owner_address,
+					Token:   map[string]string{},
+				}
+				for _, token := range inf.TokenList() {
+					owner_info.Token[token.Symbol] = inf.GetFinder().Price(owner_address, token.Contract, token.Decimal)
+				} //for
+			}
 
 			chttp.OK(w, masterInfo{
 				Mainnet:        mainnet,
@@ -77,6 +91,8 @@ func hMasterInfo() {
 				ChargerURL:     inf.EtherScanAddressURL() + chargerAddress,
 				SeedInfo:       inf.SeedView(),
 				Symbols:        inf.Config().Tokens.SymbolList(),
+				////////////////////////////////////////////
+				Owner: owner_info,
 			})
 		},
 	)
@@ -93,7 +109,7 @@ func (my *cDepositInfo) Valid() bool {
 	}
 
 	for _, v := range my.Coin {
-		if jmath.IsLessZero(v) {
+		if jmath.CMP(v, 0) < 0 {
 			return false
 		}
 	}
@@ -101,7 +117,7 @@ func (my *cDepositInfo) Valid() bool {
 	if jmath.IsNum(my.BaseValue) == false {
 		return false
 	}
-	if jmath.IsLessZero(my.BaseValue) {
+	if jmath.CMP(my.BaseValue, 0) < 0 {
 		return false
 	}
 	return true

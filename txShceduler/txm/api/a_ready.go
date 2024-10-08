@@ -4,6 +4,7 @@ import (
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/brix/tools/runtext"
 	"txscheduler/txm/aadev"
+	"txscheduler/txm/inf"
 )
 
 var handle = chttp.PContexts{}
@@ -18,9 +19,18 @@ func Ready(classic *chttp.Classic) runtext.Starter {
 	rtx := runtext.New("api")
 
 	classic.SetHandlerFunc(handlerFunc(classic))
+
+	is_onwer_task_mode := inf.IsOnwerTaskMode()
+	if is_onwer_task_mode {
+		applyOnwerHandles()
+	}
 	classic.SetContextHandles(handle)
 
 	set_base_callback_api_doc()
+	if is_onwer_task_mode {
+		h_owner_callback_api_doc()
+	}
+
 	DocEnd(classic)
 
 	return rtx

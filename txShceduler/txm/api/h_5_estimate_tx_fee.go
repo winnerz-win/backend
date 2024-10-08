@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"net/http"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
@@ -18,6 +20,8 @@ type EMT_ITEM struct {
 	EstimateTxFee string `json:"estimate_tx_fee"`
 	IsChainError  bool   `json:"is_chain_error,omitempty"`
 	ErrorMessage  string `json:"error_message,omitempty"`
+
+	Limit string `json:"limit,omitempty"`
 }
 
 func (EMT_ITEM) TagString() []string {
@@ -55,9 +59,12 @@ func hEstimateMasterTxFee() {
 		method, url,
 		func(w http.ResponseWriter, req *http.Request, ps chttp.Params) {
 
-			sender := Sender()
-			gasPrice := sender.SUGGEST_GAS_PRICE(ecsx.GasFast)
-			if gasPrice.Error() != nil {
+			ctx := context.Background()
+
+			sender := Caller()
+
+			gas_price, err := sender.SuggestGasPrice(ctx)
+			if err != nil {
 				chttp.Fail(w, ack.ChainGasPrice)
 				return
 			}
@@ -66,38 +73,49 @@ func hEstimateMasterTxFee() {
 				Symbols: map[string]EMT_ITEM{},
 			}
 
-			from := inf.Master()
+			master := inf.Master()
 			for _, token := range inf.Config().Tokens {
 
 				item := EMT_ITEM{
 					Symbol: token.Symbol,
 				}
 
-				limit := uint64(21000)
-				var err error
+				limit_text := ""
 				if !token.IsCoin {
-					padBytes := ecsx.PadBytesTransfer(
-						"0x0000000000000000000000000000000000000000",
+
+					padBytes := ebcm.PadByteTransfer(
+						ebcm.AddressONE,
 						"1",
 					)
-					limit, err = sender.XGasLimit(
-						padBytes,
-						from.Address,
-						token.Contract,
-						model.ZERO,
+
+					limit, err := sender.EstimateGas(
+						ctx,
+						ebcm.MakeCallMsg(
+							master.Address,
+							token.Contract,
+							model.ZERO,
+							padBytes,
+						),
 					)
+
 					if err != nil {
 						limit = 0
 
 						item.IsChainError = true
 						item.ErrorMessage = err.Error()
 					}
-					item.EstimateTxFee = gasPrice.FeeETH(limit)
+
+					item.EstimateTxFee = gas_price.EstimateGasFeeETH(limit)
+					limit_text = jmath.VALUE(limit)
 
 				} else {
-					item.EstimateTxFee = gasPrice.FeeETH(limit)
+					limit := uint64(21000)
+					item.EstimateTxFee = gas_price.EstimateGasFeeETH(limit)
+					limit_text = jmath.VALUE(limit)
+
 				}
 
+				item.Limit = limit_text
 				result.Symbols[token.Symbol] = item
 
 			} //for

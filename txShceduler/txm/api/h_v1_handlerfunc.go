@@ -33,6 +33,13 @@ func handlerFunc(classic *chttp.Classic) chttp.HandlerFunc {
 
 				dbg.Purple("ip_allow :", remoteIP)
 			}
+
+			if strings.HasPrefix(path, model.V1Owner) {
+				if !inf.IsOnwerTaskMode() {
+					dbg.Red("[", chttp.RemoteIPPort(r), "] IsLockTransferMode yet !")
+					return
+				}
+			}
 		}
 
 		next(w, r)

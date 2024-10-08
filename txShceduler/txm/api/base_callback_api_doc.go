@@ -1,7 +1,7 @@
 package api
 
 func set_base_callback_api_doc() {
-	Doc().Message("<---- 기본 입출금 기능 콜백 API ---->")
+	Doc().Message("---- 기본 입출금 기능 콜백 API ----------------------")
 	Doc().Message(`
 		<cc_blue>[ SERVICE CALLBACK ]</cc_blue> ( 1. 입금 콜백 ) 가입한 회원 주소로 코인이 입금되었을 경우 입금 내역 전송
 		

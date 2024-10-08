@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
+	"jtools/cloud/ebcm"
+	"jtools/jmath"
 	"net/http"
-	"txscheduler/brix/tools/cloudx/ethwallet/ecsx"
 	"txscheduler/brix/tools/database/mongo"
+	"txscheduler/brix/tools/database/mongo/tools/cc"
 	"txscheduler/brix/tools/dbg"
-	"txscheduler/brix/tools/jmath"
 	"txscheduler/brix/tools/jnet/chttp"
 	"txscheduler/txm/ack"
 	"txscheduler/txm/inf"
@@ -37,6 +39,7 @@ func hVersion(isRoot bool) {
 		Version string `json:"version"`
 		Server  string `json:"server"`
 		Mainnet bool   `json:"mainnet"`
+		IP      string `json:"ip,omitempty"`
 	}
 	Doc().Comment("[ 버전정보 ] 스케줄러 서버 버전 요청").
 		Method(method).URL(url).
@@ -55,10 +58,21 @@ func hVersion(isRoot bool) {
 	handle.Append(
 		method, url,
 		func(w http.ResponseWriter, req *http.Request, ps chttp.Params) {
+			_ip := ""
+			ip, dir, err := chttp.GetIP(req)
+			cc.Green("[", dir, "]", ip, err)
+
+			if err != nil {
+				_ip = err.Error()
+			} else {
+				_ip = ip
+			}
+
 			chttp.OK(w, RESULT{
 				Version: inf.Version(),
 				Server:  inf.DBName,
 				Mainnet: inf.Mainnet(),
+				IP:      _ip,
 			})
 		},
 	)
@@ -69,9 +83,32 @@ type cGasPriceData struct {
 	TxGasFeeETH string `json:"gasFeeETH"`
 }
 
-func (my *cGasPriceData) Calc(limit uint64, price ecsx.XGasPrice) {
-	my.GasPrice = price.ETH()
-	my.TxGasFeeETH = price.FeeETH(limit)
+func (my *cGasPriceData) Calc(speed ebcm.GasSpeed, limit uint64, price ebcm.GasPrice) {
+	gas_wei := jmath.VALUE(price.Gas)
+	gas_eth := ebcm.WeiToETH(gas_wei)
+
+	fee_wei := jmath.MUL(gas_wei, limit)
+
+	switch speed {
+	default:
+		//case ebcm.GasSafeLow:
+		my.GasPrice = gas_eth
+		my.TxGasFeeETH = ebcm.WeiToETH(fee_wei)
+
+	case ebcm.GasAverage:
+		my.GasPrice = gas_eth
+		my.TxGasFeeETH = ebcm.WeiToETH(jmath.DOTCUT(jmath.MUL(fee_wei, 1.2), 0))
+
+	case ebcm.GasFast:
+		my.GasPrice = gas_eth
+		my.TxGasFeeETH = ebcm.WeiToETH(jmath.DOTCUT(jmath.MUL(fee_wei, 1.3), 0))
+
+	case ebcm.GasFastest:
+		my.GasPrice = gas_eth
+		my.TxGasFeeETH = ebcm.WeiToETH(jmath.DOTCUT(jmath.MUL(fee_wei, 1.5), 0))
+
+	}
+
 }
 
 type cInfoGasFee struct {
@@ -89,7 +126,7 @@ func hInfoGasFee() {
 	/*
 		Comment : 트랜젝션 가스 수수료 계산
 		Method : POST
-		URL : http://npt.iptime.org:8989/info/gasfee
+		URL : http://scheduler.server.org:8080/info/gasfee
 		Param :
 		{
 			"gasLimit" : long 	//가스 리미티드 값 (ETH 전송시 21000 고정)
@@ -142,16 +179,13 @@ func hInfoGasFee() {
 				GasLimit: cdata.GasLimit,
 			}
 
-			f := ecsx.New(inf.Mainnet(), inf.InfuraKey())
-			gasLow := f.SUGGEST_GAS_PRICE(ecsx.GasSafeLow)
-			gasAvg := f.SUGGEST_GAS_PRICE(ecsx.GasAverage)
-			gasFast := f.SUGGEST_GAS_PRICE(ecsx.GasFast)
-			gasFastest := f.SUGGEST_GAS_PRICE(ecsx.GasFastest)
+			f := inf.GetFinder()
+			gas_price, _ := f.SuggestGasPrice(context.Background(), true)
 
-			r.Low.Calc(r.GasLimit, gasLow)
-			r.Avg.Calc(r.GasLimit, gasAvg)
-			r.Fast.Calc(r.GasLimit, gasFast)
-			r.Fastest.Calc(r.GasLimit, gasFastest)
+			r.Low.Calc(ebcm.GasSafeLow, r.GasLimit, gas_price)
+			r.Avg.Calc(ebcm.GasAverage, r.GasLimit, gas_price)
+			r.Fast.Calc(ebcm.GasFast, r.GasLimit, gas_price)
+			r.Fastest.Calc(ebcm.GasFastest, r.GasLimit, gas_price)
 
 			chttp.OK(w, r)
 		},
@@ -159,6 +193,11 @@ func hInfoGasFee() {
 }
 
 func hInfoMaster() {
+
+	type ownerInfo struct {
+		Address string            `json:"address"`
+		Token   map[string]string `json:"token"`
+	}
 
 	type masterInfo struct {
 		Mainnet        bool           `json:"mainnet"`
@@ -169,6 +208,9 @@ func hInfoMaster() {
 		MemberCount    int            `json:"member_count"`
 		MasterURL      string         `json:"master_url"`
 		ChargerURL     string         `json:"charger_url"`
+
+		IsSupportLockupMode bool       `json:"is_support_lockup_mode"`
+		Owner               *ownerInfo `json:"owner,omitempty"`
 	}
 
 	method := chttp.GET
@@ -208,23 +250,18 @@ func hInfoMaster() {
 
 			masterPrice := map[string]string{}
 			for _, token := range inf.TokenList() {
-				finder := ecsx.New(mainnet, inf.InfuraKey())
-				wei := finder.Balance2(masterAddress, token.Contract)
-				price := ecsx.WeiToToken(wei, token.Decimal)
-				masterPrice[token.Symbol] = price
+				masterPrice[token.Symbol] = inf.GetFinder().Price(masterAddress, token.Contract, token.Decimal)
 			}
 
-			finder := ecsx.New(mainnet, inf.InfuraKey())
-			wei := finder.Balance(chargerAddress)
 			chargerPrice := map[string]string{}
-			chargerPrice[model.ETH] = ecsx.WeiToToken(wei, "18")
+			chargerPrice[model.ETH] = inf.GetFinder().GetCoinPrice(chargerAddress)
 
 			memberCount := 0
 			model.DB(func(db mongo.DATABASE) {
 				memberCount, _ = db.C(inf.COLMember).Count()
 			})
 
-			chttp.OK(w, masterInfo{
+			result := masterInfo{
 				Mainnet:        mainnet,
 				MasterAddress:  masterAddress,
 				MasterPrice:    masterPrice,
@@ -233,7 +270,24 @@ func hInfoMaster() {
 				MemberCount:    memberCount,
 				MasterURL:      inf.EtherScanAddressURL() + masterAddress,
 				ChargerURL:     inf.EtherScanAddressURL() + chargerAddress,
-			})
+			}
+
+			result.IsSupportLockupMode = inf.IsOnwerTaskMode()
+
+			var owner_info *ownerInfo = nil
+			if result.IsSupportLockupMode {
+				owner_address := inf.Owner().Address
+				owner_info = &ownerInfo{
+					Address: owner_address,
+					Token:   map[string]string{},
+				}
+				for _, token := range inf.TokenList() {
+					owner_info.Token[token.Symbol] = inf.GetFinder().Price(owner_address, token.Contract, token.Decimal)
+				} //for
+			}
+			result.Owner = owner_info
+
+			chttp.OK(w, result)
 		},
 	)
 }
@@ -395,7 +449,7 @@ func hInfoMemberAddress() {
 			address := ps.ByName("args")
 
 			address = dbg.TrimToLower(address)
-			if address == "" || ecsx.IsAddress(address) == false {
+			if address == "" || ebcm.IsAddress(address) == false {
 				chttp.Fail(w, ack.NotFoundName)
 				return
 			}
